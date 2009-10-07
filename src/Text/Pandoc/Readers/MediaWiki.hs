@@ -38,6 +38,8 @@ Conversion from MediaWiki to 'Pandoc' document.
 -}
 module Text.Pandoc.Readers.MediaWiki (readMediaWiki, test) where
 
+import Data.List ( intersperse )
+
 import Text.Pandoc.Definition
 import Text.Pandoc.Shared 
 import Text.ParserCombinators.Parsec
@@ -62,8 +64,8 @@ readMediaWiki state s = (readWith parseMediaWiki) state (stripTrailingNewLines s
 parseMediaWiki :: MWP Pandoc
 parseMediaWiki = do
     let meta = Meta [] [] ""
-    blocks <- sepEndBy parseBlock (many endOfLine)
-    return $ Pandoc meta blocks
+    blocks <- many parseBlock
+    return $ Pandoc meta $ mergePlain blocks
 
 -- | Parse a Pandoc block.
 -- A block can either be a
@@ -92,7 +94,7 @@ parseHeader = do
     let stripped = stripSpaces inlines
     closeHeader <- many1 $ char '='
     let lengthDiff = abs $ length openHeader - length closeHeader
-    let level = min (length openHeader) (length closeHeader) - 1
+    let level = min (length openHeader) (length closeHeader)
     let text = case compare (length openHeader) (length closeHeader) of
                  LT -> stripped ++ [(Str $ replicate lengthDiff '=')]
                  GT -> [(Str $ replicate lengthDiff '=')] ++ stripped
@@ -278,15 +280,17 @@ parseInlines delims = do
     -- Micro-level parsing of a string chunk. Disjunction of the parsers found below.
     parseInlineString :: Parser [Inline]
     parseInlineString = do
-        inlines <- many $ choice [parseSpace, parseEmDash, parseEnDash, parseEllipses, 
+        inlines <- many $ choice [parseSpace,
+                                  parseLocalLink,
+                                  parseEmDash, parseEnDash, parseEllipses,
                                   parseLineBreak, parseApostrophe, parseString]
         return inlines
 
     specialChars    = " -.\n\'"
     parseSpace      = do { char ' '; return Space }
-    parseEmDash     = do { count 3 $ char '-'; return EmDash }
-    parseEnDash     = do { count 2 $ char '-'; return EnDash }
-    parseEllipses   = do { count 3 $ char '.'; return Ellipses }
+    parseEmDash     = do { try $ count 3 $ char '-'; return EmDash }
+    parseEnDash     = do { try $ count 2 $ char '-'; return EnDash }
+    parseEllipses   = do { try $ count 3 $ char '.'; return Ellipses }
     parseLineBreak  = do { char '\n'; return LineBreak }
     parseApostrophe = do { char '\''; return Apostrophe }
     parseString     = (Str . concat) `fmap` many1 parseStringChunk
@@ -477,10 +481,29 @@ fTxtToPandoc total@((n,_):_) =
 parseBoldItalic :: String -> [Inline]
 parseBoldItalic = fTxtToPandoc . (biParser 0) . biLexer
 
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+-- * Links
 
+parseLocalLink :: GenParser Char () Inline
+parseLocalLink = try $ doubleBracketed $ do
+  p <- unwords `fmap` sepEndBy1 (many1 $ noneOf "|] \t") spaceChar
+  l <- option p $ do { char '|' ; skipSpaces ; many1 $ noneOf "]" }
+  return $ Link [Str l] (p, "")
 
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 -- * Utility funcions
+
+mergePlain :: [Block] -> [Block]
+mergePlain [] = []
+mergePlain (Plain [LineBreak] : bs) = mergePlain bs
+mergePlain (Plain i : bs) = para : mergePlain bs2
+ where
+   para = Para . concat . intersperse [ Space ] $ inlines
+   (inlines,bs2) = takeLB [i] bs
+mergePlain (b:bs)          = b : mergePlain bs
+
+takeLB acc (Plain [LineBreak] : Plain p : bs) = takeLB (p : acc) bs
+takeLB acc xs = (reverse acc, xs)
 
 -- | A singleton list of a given element if a condition holds, empty otherwise.
 listIf :: Bool      -- ^ If this holds, then...

@@ -69,6 +69,8 @@ module Text.Pandoc.Shared (
                      romanNumeral,
                      emailAddress,
                      uri,
+                     singleBracketed,
+                     doubleBracketed,
                      withHorizDisplacement,
                      nullBlock,
                      failIfStrict,
@@ -605,6 +607,16 @@ inTwoParens num = try $ do
   (style, start) <- num
   char ')'
   return (start, style, TwoParens)
+
+-- | Parses anything which is enclosed in square brackets.
+singleBracketed :: (GenParser Char st a) -> GenParser Char st a
+singleBracketed parser = do
+  between (string "[") (string "]") parser
+
+-- | Parses anything which is enclosed in double square brackets.
+doubleBracketed :: (GenParser Char st a) -> GenParser Char st a
+doubleBracketed parser = do
+  between (string "[[") (string "]]") parser
 
 -- | Parses an ordered list marker with a given style and delimiter,
 -- returns number.

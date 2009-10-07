@@ -85,6 +85,7 @@ readers :: [(String, ParserState -> String -> Pandoc)]
 readers = [("native"       , readPandoc)
           ,("markdown"     , readMarkdown)
           ,("markdown+lhs" , readMarkdown)
+          ,("mediawiki"     , readMediaWiki)
           ,("rst"          , readRST)
           ,("rst+lhs"      , readRST)
           ,("html"         , readHtml)

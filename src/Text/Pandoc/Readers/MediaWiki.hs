@@ -144,7 +144,7 @@ parseList ctor itemChar = do
     parseListItem :: MWP (Int, [Block])
     parseListItem = do
         listSymbols <- (many1 $ char itemChar) <?> "List item"
-        content <- parsePlain -- TODO: expand to more things available in lists
+        content <- parsePlain <|> return Null -- TODO: expand to more things available in lists
         endOfLine -- Consume end of this list item
         return (length listSymbols, [content])
 
@@ -281,7 +281,7 @@ parseInlines delims = do
     parseInlineString :: Parser [Inline]
     parseInlineString = do
         inlines <- many $ choice [parseSpace,
-                                  parseLocalLink,
+                                  parseLocalLink, parseRemoteLink,
                                   parseEmDash, parseEnDash, parseEllipses,
                                   parseLineBreak, parseApostrophe, parseString]
         return inlines
@@ -298,6 +298,7 @@ parseInlines delims = do
                      <|> do { singleton `fmap` char '-' }
                      <|> do { singleton `fmap` char '.' }
 
+singleton :: a -> [a]
 singleton = (: [])
 
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -
@@ -490,6 +491,13 @@ parseLocalLink = try $ doubleBracketed $ do
   l <- option p $ do { char '|' ; skipSpaces ; many1 $ noneOf "]" }
   return $ Link [Str l] (p, "")
 
+parseRemoteLink :: GenParser Char () Inline
+parseRemoteLink = try $ singleBracketed $ do
+  u <- uri
+  skipSpaces
+  l <- option u $ many1 (noneOf "]")
+  return $ Link [Str l] (u, "")
+
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 -- * Utility funcions
 
@@ -502,6 +510,7 @@ mergePlain (Plain i : bs) = para : mergePlain bs2
    (inlines,bs2) = takeLB [i] bs
 mergePlain (b:bs)          = b : mergePlain bs
 
+takeLB acc bs@(Plain [LineBreak] : Plain [LineBreak] : _) = (reverse acc, bs)
 takeLB acc (Plain [LineBreak] : Plain p : bs) = takeLB (p : acc) bs
 takeLB acc xs = (reverse acc, xs)
 

@@ -62,7 +62,7 @@ readMediaWiki state s = (readWith parseMediaWiki) state (stripTrailingNewLines s
 parseMediaWiki :: MWP Pandoc
 parseMediaWiki = do
     let meta = Meta [] [] ""
-    blocks <- many parseBlock
+    blocks <- sepEndBy parseBlock (many endOfLine)
     return $ Pandoc meta blocks
 
 -- | Parse a Pandoc block.
@@ -75,7 +75,6 @@ parseMediaWiki = do
 --   * Simply a bunch of text
 parseBlock :: MWP Block
 parseBlock = do
-    skipMany endOfLine
     block <- parseHeader
          <|> parseHorizontalRule
          <|> parseBulletList
@@ -103,7 +102,7 @@ parseHeader = do
 -- | Parse a horizontal line
 parseHorizontalRule :: MWP Block
 parseHorizontalRule = do
-    count 4 (char '-') <?> "Horizontal rule"
+    count 4 (char '-') >> skipMany (char '-') <?> "Horizontal rule"
     return HorizontalRule
 
 -- | Parsing an empty block (used as a fall-back to consume newlines)
@@ -290,9 +289,12 @@ parseInlines delims = do
     parseEllipses   = do { count 3 $ char '.'; return Ellipses }
     parseLineBreak  = do { char '\n'; return LineBreak }
     parseApostrophe = do { char '\''; return Apostrophe }
-    parseString     = do { str <- many1 $ noneOf specialChars; return $ Str str }
+    parseString     = (Str . concat) `fmap` many1 parseStringChunk
+    parseStringChunk = do { str <- many1 $ noneOf specialChars; return str }
+                     <|> do { singleton `fmap` char '-' }
+                     <|> do { singleton `fmap` char '.' }
 
-
+singleton = (: [])
 
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -
 -- * Parsing Bold/Italic Text

@@ -1,0 +1,23 @@
+Pandoc (Meta [] [] "")
+[ Header 1 [Str "Level",Space,Str "one",Space,Str "header"]
+, Para [Str "This",Space,Str "is",Space,Str "a",Space,Str "set",Space,Str "of",Space,Str "tests",Space,Str "for",Space,Str "pandoc.",Space,Str "Most",Space,Str "of",Space,Str "them",Space,Str "are",Space,Str "adapted",Space,Str "from",Space,Str "John",Space,Str "Gruber",Apostrophe,Str "s",Space,Str "markdown",Space,Str "test",Space,Str "suite."]
+, Header 2 [Str "Level",Space,Str "two",Space,Str "header"]
+, Header 3 [Str "Level",Space,Str "three"]
+, Header 4 [Str "Level",Space,Str "four",Space,Str "with",Space,Strong [Str "emphasis"]]
+, Header 5 [Str "Level",Space,Str "five"]
+, Header 1 [Str "Paragraphs"]
+, Para [Str "Here",Apostrophe,Str "s",Space,Str "a",Space,Str "regular",Space,Str "paragraph."]
+, Para [Str "In",Space,Str "Markdown",Space,Str "1.0.0",Space,Str "and",Space,Str "earlier.",Space,Str "Version",Space,Str "8.",Space,Str "This",Space,Str "line",Space,Str "turns",Space,Str "into",Space,Str "a",Space,Str "list",Space,Str "item.",Space,Str "Because",Space,Str "a",Space,Str "hard-wrapped",Space,Str "line",Space,Str "in",Space,Str "the",Space,Str "middle",Space,Str "of",Space,Str "a",Space,Str "paragraph",Space,Str "looked",Space,Str "like",Space,Str "a",Space,Str "list",Space,Str "item."]
+, Para [Str "Here",Apostrophe,Str "s",Space,Str "one",Space,Str "with",Space,Str "a",Space,Str "bullet."]
+, BulletList
+  [ [ Plain [Str "criminey."] ]
+ ]
+, Para [Str "Sometimes",Space,Str "people",Space,Str "have",Space,Str "empty",Space,Str "bullet",Space,Str "points",Space,Str "(sigh)."]
+, BulletList
+  [ [ Null ]
+  , [ Plain [Str "criminey."] ] ]
+, Para [Str "Horizontal",Space,Str "rule:"]
+, HorizontalRule
+, Para [Str "Another:"]
+, HorizontalRule ]
+

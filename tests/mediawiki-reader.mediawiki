@@ -1,0 +1,37 @@
+= Level one header =
+
+This is a set of tests for pandoc. Most of them are adapted from John Gruber's markdown test suite.
+
+== Level two header ==
+
+=== Level three ===
+
+==== Level four with '''emphasis''' ====
+
+===== Level five =====
+
+= Paragraphs =
+
+Here's a regular paragraph.
+
+In Markdown 1.0.0 and earlier. Version
+8. This line turns into a list item.
+Because a hard-wrapped line in the
+middle of a paragraph looked like a
+list item.
+
+Here's one with a bullet.
+* criminey.
+
+Sometimes people have empty bullet points (sigh).
+*
+* criminey.
+
+
+Horizontal rule:
+
+-----
+
+Another:
+
+------------

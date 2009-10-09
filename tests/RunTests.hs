@@ -95,6 +95,8 @@ main = do
              "html-reader.html" "html-reader.native"
   r10 <- runTest "latex reader" ["-r", "latex", "-w", "native", "-s", "-R"]
              "latex-reader.latex" "latex-reader.native"
+  rMW <- runTest "mediawiki-reader" ["-r", "mediawiki", "-w", "native", "-s", "-S"]
+             "mediawiki-reader.mediawiki" "mediawiki-reader.native"
   r11 <- runTest "native reader" ["-r", "native", "-w", "native", "-s"]
              "testsuite.native" "testsuite.native"
   r12s <- if runLhsTests
@@ -109,6 +111,7 @@ main = do
                 , r8
                 , r9
                 , r10
+                , rMW
                 , r11
                 ] ++ r12s ++ r13s
   if all id results

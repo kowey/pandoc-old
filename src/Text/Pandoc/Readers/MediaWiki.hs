@@ -99,7 +99,7 @@ parseHeader = do
                  LT -> stripped ++ [(Str $ replicate lengthDiff '=')]
                  GT -> [(Str $ replicate lengthDiff '=')] ++ stripped
                  EQ -> stripped
-    return $ Header level text
+    return $ Header (level - 1) text
 
 -- | Parse a horizontal line
 parseHorizontalRule :: MWP Block

@@ -281,6 +281,7 @@ parseInlines delims = do
     parseInlineString :: Parser [Inline]
     parseInlineString = do
         inlines <- many $ choice [parseSpace,
+                                  parseImage,
                                   parseLocalLink, parseRemoteLink,
                                   parseEmDash, parseEnDash, parseEllipses,
                                   parseLineBreak, parseApostrophe, parseString]
@@ -497,6 +498,15 @@ parseRemoteLink = try $ singleBracketed $ do
   skipSpaces
   l <- option u $ many1 (noneOf "]")
   return $ Link [Str l] (u, "")
+
+parseImage :: GenParser Char () Inline
+parseImage = try $ doubleBracketed $ do
+  string "Image:"
+  ps <- many1 (noneOf "|]") `sepBy` (char '|')
+  case ps of
+   []      -> error "empty image"
+   [p]     -> return $ Image [] (p, "")
+   (p:_:_) -> return $ Image [Str (last ps)] (p, "")
 
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 -- * Utility funcions

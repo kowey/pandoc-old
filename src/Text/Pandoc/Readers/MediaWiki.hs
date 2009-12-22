@@ -264,10 +264,21 @@ parsePlain = do
 parseInlines :: [Char] -> MWP [Inline]
 parseInlines delims = do
     rawText <- many1 $ noneOf delims
-    let boldItalics = parseBoldItalic rawText
+    let boldItalics = mergeBI $ parseBoldItalic rawText
     let fullyParsed = concatMap parseInlineStrings boldItalics
     return fullyParsed
   where
+    -- Merge consecutive strings
+    mergeBI [] = []
+    mergeBI (x:xs)
+     | str x = let (ss,ns) = span str (x:xs)
+               in Str (concatMap fromStr ss) : mergeBI ns
+     | otherwise = x : mergeBI xs
+    fromStr (Str xs) = xs
+    fromStr _ = error "fromStr"
+    str (Str _) = True
+    str _ = False
+
     -- Divide a coarse chunk up into smaller chunks.
     parseInlineStrings :: Inline -> [Inline]
     parseInlineStrings (Str x)    = case parse parseInlineString "" x of

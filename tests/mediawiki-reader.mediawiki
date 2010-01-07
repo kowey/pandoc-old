@@ -35,3 +35,15 @@ Horizontal rule:
 Another:
 
 ------------
+
+= Links =
+
+* [[Simple intra]]
+* [[Simple intra ' 2]]
+* [[Intra | Foo]]
+* http://example.com/bar
+* [http://example.com/foo bar]
+* [[Image:foo bar]]
+* [[Image:foo bar|cap]]
+* [[Image:foo bar|cap']]
+* [[Image:foo bar|quux mah mah|cap]]

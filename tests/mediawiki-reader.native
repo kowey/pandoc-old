@@ -19,5 +19,12 @@ Pandoc (Meta [] [] "")
 , Para [Str "Horizontal",Space,Str "rule:"]
 , HorizontalRule
 , Para [Str "Another:"]
-, HorizontalRule ]
+, HorizontalRule
+, Header 1 [Str "Links"]
+, BulletList
+  [ [ Plain [Link [Str "Simple intra"] ("Simple intra","")] ]
+  , FIXME
+  , [ Plain [Link [Str "Foo"] ("Intra","")] ]
+  , FIXME
+  , [ Plain [Link [Str "bar"] ("http://example.com/foo","")] ] ] ]
 

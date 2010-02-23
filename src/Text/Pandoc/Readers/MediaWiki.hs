@@ -513,11 +513,41 @@ parseRemoteLink = try $ singleBracketed $ do
 parseImage :: GenParser Char () Inline
 parseImage = try $ doubleBracketed $ do
   string "Image:"
-  ps <- many1 (noneOf "|]") `sepBy` (char '|')
+  ps <- stringWithBrackets "|" "]" `sepBy` (char '|')
   case ps of
    []      -> error "empty image"
    [p]     -> return $ Image [] (p, "")
-   (p:_:_) -> return $ Image [Str (last ps)] (p, "")
+   (p:_:_) -> case runParser (parseInlines "") defaultParserState "image caption" (last ps) of
+                Left err  -> fail (show err)
+                Right ins -> return $ Image ins (p, "")
+
+-- | 'stringWithBrackets' @delims stop@ parses text in which the @delim@
+--   characters only appear within brackets or not at all.  @stop@
+--   characters may never appear (unless, of course, they are brackets,
+--   in which case, they can only appear as such).
+--
+--   You'll have to parse the text again later to grab the inlines from
+--   it.
+--
+--   This is useful for cases where the delims have a meaning, but
+--   that you are dealing with embedded inline elements which may
+--   also use the delims for their own purposes.
+stringWithBrackets :: [Char] -- ^ delims
+                   -> [Char] -- ^ stop chars
+                   -> GenParser Char () String
+stringWithBrackets delims stop = helper False
+ where
+  helper allow =
+       betweenWrap '[' ']' (helper True)
+   <|> betweenWrap '{' '}' (helper True)
+   <|> do c  <- noneOf (if allow then stop else delims ++ stop)
+          cs <- helper allow
+          return $ c : cs
+   <|> do lookAhead . oneOf $ if allow then stop else delims ++ stop
+          return []
+   where
+    betweenWrap l r p = between (char l) (char r) (wrapTxt l r `fmap` p)
+    wrapTxt l r s = showChar l (showString s [r])
 
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 -- * Utility funcions

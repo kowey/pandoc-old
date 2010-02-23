@@ -1,5 +1,6 @@
 {-
 Copyright (C) 2008, Niels Aan de Brugh <nielsadb@gmail.com>
+Copyright (C) 2010, Eric Kow <eric.kow@gmail.com>
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without

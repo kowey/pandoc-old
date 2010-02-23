@@ -1,6 +1,11 @@
 #!/bin/sh -e
 
-REQUIRED="pdflatex"
+latexprogram=pdflatex
+if (echo "$@" | grep -q xetex); then
+   latexprogram=xelatex
+fi
+
+REQUIRED=$latexprogram
 SYNOPSIS="converts markdown-formatted text to PDF, using pdflatex."
 
 THIS=${0##*/}
@@ -13,7 +18,8 @@ errn () { printf "$*" | fold -s -w ${COLUMNS:-110} >&2; }
 
 usage () {
     err "$1 - $2" # short description
-    err "See the $1(1) man page for usage."
+    err "Options:"
+    pandoc -h | sed -ne '/--strict\|--preserve-tabs\|--tab-stop\|--parse-raw\|--toc\|--xetex\|--number-sections\|--include-in-header\|--include-before-body\|--include-after-body\|--custom-header\|--output\|--template\|--variable\|--help\|--version/p' >&2
 }
 
 # Portable which(1).
@@ -36,16 +42,14 @@ for p in pandoc $REQUIRED; do
     }
 done
 
-CONF=$(pandoc --dump-args "$@" 2>&1) || {
-    errcode=$?
-    echo "$CONF" | sed -e '/^pandoc \[OPTIONS\] \[FILES\]/,$d' >&2
-    [ $errcode -eq 2 ] && usage "$THIS" "$SYNOPSIS"
-    exit $errcode
-}
+if (echo "$@" | grep -q -- "--help\|-h"); then
+    usage "$THIS" "$SYNOPSIS"
+    exit 0
+fi
 
+CONF=$(pandoc --dump-args "$@") || exit $?
 OUTPUT=$(echo "$CONF" | sed -ne '1p')
 ARGS=$(echo "$CONF" | sed -e '1d')
-
 
 # As a security measure refuse to proceed if mktemp is not available.
 pathfind mktemp || { err "Couldn't find 'mktemp'; aborting."; exit 1;  }
@@ -87,9 +91,9 @@ fi
     finished=no
     runs=0
     while [ $finished = "no" ]; do
-      pdflatex -interaction=batchmode $texname.tex >/dev/null || {
+      $latexprogram -interaction=batchmode $texname.tex >/dev/null || {
         errcode=$?
-        err "${THIS}: pdfLaTeX failed with error code $errcode"
+        err "${THIS}: $latexprogram failed with error code $errcode"
         [ -f $texname.log ] && {
           err "${THIS}: error context:"
           sed -ne '/^!/,/^[[:space:]]*$/p' \
@@ -107,7 +111,7 @@ fi
         exit $errcode
       }
       if [ $runs -lt 3 ] && 
-      ((grep -q "LaTeX Warning: There were undefined references." $texname.log) ||
+      ((grep -q "Warning: There were undefined references." $texname.log) ||
        (echo "$@" | grep -q -- "--toc\|--table-of-contents")); then
         runs=$(($runs + 1))
         if grep -q "LaTeX Warning:.*[Cc]itation" $texname.log; then
@@ -119,22 +123,14 @@ fi
             fi
           fi
         fi
-      else
+      elif [ $runs -gt 1 ]; then   # always run at least twice for pdf bookmarks
         finished=yes
+      else
+        runs=$(($runs + 1))
       fi
     done
 ) || exit $?
 
-is_target_exists=
-if [ -f "$destname" ]; then
-    is_target_exists=1
-    mv "$destname" "$destname~" 
-fi
-
 mv -f $THIS_TEMPDIR/$texname.pdf "$destname"
 
-errn "Created $destname"
-[ -z "$is_target_exists" ] || {
-    errn " (previous file has been backed up as $destname~)"
-}
-err .
+err "Created $destname"

@@ -1,4 +1,5 @@
 \input texinfo
+@documentencoding utf-8
 
 @macro textstrikeout{text}
 ~~\text\~~
@@ -22,7 +23,6 @@ _@{\text\@}
 @end ifnottex
 @end macro
 
-
 @ifnottex
 @paragraphindent 0
 @end ifnottex
@@ -32,6 +32,7 @@ _@{\text\@}
 @author Anonymous
 July 17@comma{} 2006
 @end titlepage
+
 @node Top
 @top Pandoc Test Suite
 
@@ -586,6 +587,58 @@ orange block quote
 @end quotation
 @end table
 
+Multiple definitions@comma{} tight:
+
+@table @asis
+@item apple
+
+red fruit
+computer
+@item orange
+
+orange fruit
+bank
+@end table
+
+Multiple definitions@comma{} loose:
+
+@table @asis
+@item apple
+
+red fruit
+
+computer
+
+@item orange
+
+orange fruit
+
+bank
+
+@end table
+
+Blank line after term@comma{} indented marker@comma{} alternate markers:
+
+@table @asis
+@item apple
+
+red fruit
+
+computer
+
+@item orange
+
+orange fruit
+
+@enumerate 
+@item
+sublist
+@item
+sublist
+@end enumerate
+
+@end table
+
 
 @node HTML Blocks
 @chapter HTML Blocks
@@ -958,3 +1011,4 @@ And in list items.@footnote{In list.}
 This paragraph should not be part of the note@comma{} as it is not indented.
 
 @bye
+

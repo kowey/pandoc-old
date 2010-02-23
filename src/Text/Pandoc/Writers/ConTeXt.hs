@@ -31,9 +31,10 @@ module Text.Pandoc.Writers.ConTeXt ( writeConTeXt ) where
 import Text.Pandoc.Definition
 import Text.Pandoc.Shared
 import Text.Printf ( printf )
-import Data.List ( isSuffixOf, intercalate )
+import Data.List ( isSuffixOf, intercalate, intersperse )
 import Control.Monad.State
 import Text.PrettyPrint.HughesPJ hiding ( Str )
+import Text.Pandoc.Templates ( renderTemplate )
 
 data WriterState = 
   WriterState { stNextRef          :: Int  -- number of next URL reference
@@ -51,52 +52,34 @@ writeConTeXt options document =
                                        , stOrderedListLevel = 0
                                        , stOptions = options
                                        } 
-  in  render $ 
-  evalState (pandocToConTeXt options document) defaultWriterState 
+  in evalState (pandocToConTeXt options document) defaultWriterState 
 
-pandocToConTeXt :: WriterOptions -> Pandoc -> State WriterState Doc
-pandocToConTeXt options (Pandoc meta blocks) = do
-  main    <- blockListToConTeXt blocks 
+pandocToConTeXt :: WriterOptions -> Pandoc -> State WriterState String
+pandocToConTeXt options (Pandoc (Meta title authors date) blocks) = do
+  titletext <- if null title
+                  then return ""
+                  else liftM render $ inlineListToConTeXt title
+  authorstext <- mapM (liftM render . inlineListToConTeXt) authors
+  datetext <-  if null date
+                  then return ""
+                  else liftM render $ inlineListToConTeXt date
+  body <- blockListToConTeXt blocks 
   let before = if null (writerIncludeBefore options)
                   then empty
                   else text $ writerIncludeBefore options
   let after  = if null (writerIncludeAfter options)
                   then empty
                   else text $ writerIncludeAfter options
-  let body = before $$ main $$ after
-  head'    <- if writerStandalone options
-                 then contextHeader options meta
-                 else return empty
-  let toc  = if writerTableOfContents options
-                then text "\\placecontent\n"
-                else empty 
-  let foot = if writerStandalone options
-                then text "\\stoptext\n"
-                else empty 
-  return $ head' $$ toc $$ body $$ foot
-
--- | Insert bibliographic information into ConTeXt header.
-contextHeader :: WriterOptions -- ^ Options, including ConTeXt header
-              -> Meta          -- ^ Meta with bibliographic information
-              -> State WriterState Doc
-contextHeader options (Meta title authors date) = do
-  titletext    <- if null title
-                     then return empty 
-                     else inlineListToConTeXt title
-  let authorstext = if null authors
-                       then ""
-                       else if length authors == 1
-                            then stringToConTeXt $ head authors
-                            else stringToConTeXt $ (intercalate ", " $
-                                 init authors) ++ " & " ++ last authors
-  let datetext   = if date == ""
-                       then "" 
-                       else stringToConTeXt date
-  let titleblock = text "\\doctitle{" <> titletext <> char '}' $$
-                   text ("\\author{" ++ authorstext ++ "}") $$
-                   text ("\\date{" ++ datetext ++ "}")
-  let header     = text $ writerHeader options
-  return $ header $$ titleblock $$ text "\\starttext\n\\maketitle\n"
+  let main = render $ before $$ body $$ after
+  let context  = writerVariables options ++
+                 [ ("toc", if writerTableOfContents options then "yes" else "")
+                 , ("body", main)
+                 , ("title", titletext)
+                 , ("date", datetext) ] ++
+                 [ ("author", a) | a <- authorstext ]
+  return $ if writerStandalone options
+              then renderTemplate context $ writerTemplate options
+              else main
 
 -- escape things as needed for ConTeXt
 
@@ -192,15 +175,16 @@ blockToConTeXt (Header level lst) = do
                          text base <> char '{' <> contents <> char '}'
                     else contents
 blockToConTeXt (Table caption aligns widths heads rows) = do
-    let colWidths = map printDecimal widths
     let colDescriptor colWidth alignment = (case alignment of
                                                AlignLeft    -> 'l' 
                                                AlignRight   -> 'r'
                                                AlignCenter  -> 'c'
                                                AlignDefault -> 'l'):
-                                           "p(" ++ colWidth ++ "\\textwidth)|"
+           if colWidth == 0
+              then "|"
+              else ("p(" ++ printf "%.2f" colWidth ++ "\\textwidth)|")
     let colDescriptors = "|" ++ (concat $ 
-                                 zipWith colDescriptor colWidths aligns)
+                                 zipWith colDescriptor widths aligns)
     headers <- tableRowToConTeXt heads 
     captionText <- inlineListToConTeXt caption 
     let captionText' = if null caption then text "none" else captionText
@@ -209,9 +193,6 @@ blockToConTeXt (Table caption aligns widths heads rows) = do
              text "\\starttable[" <> text colDescriptors <> char ']' $$
              text "\\HL" $$ headers $$ text "\\HL" $$
              vcat rows' $$ text "\\HL\n\\stoptable"
-
-printDecimal :: Double  -> String
-printDecimal = printf "%.2f" 
 
 tableRowToConTeXt :: [[Block]] -> State WriterState Doc
 tableRowToConTeXt cols = do
@@ -223,10 +204,10 @@ listItemToConTeXt :: [Block] -> State WriterState Doc
 listItemToConTeXt list = blockListToConTeXt list >>=
   return . (text "\\item" $$) . (nest 2)
 
-defListItemToConTeXt :: ([Inline], [Block]) -> State WriterState BlockWrapper
-defListItemToConTeXt (term, def) = do
+defListItemToConTeXt :: ([Inline], [[Block]]) -> State WriterState BlockWrapper
+defListItemToConTeXt (term, defs) = do
   term' <- inlineListToConTeXt term
-  def'  <- blockListToConTeXt def
+  def'  <- liftM (vcat . intersperse (text "")) $ mapM blockListToConTeXt defs
   return $ Pad $ text "\\startdescr{" <> term' <> char '}' $$ def' $$ text "\\stopdescr"
 
 -- | Convert list of block elements to ConTeXt.

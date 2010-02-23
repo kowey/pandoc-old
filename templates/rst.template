@@ -1,0 +1,31 @@
+$if(title)$
+$title$
+
+$endif$
+$for(author)$
+:Author: $author$
+$endfor$
+$if(date)$
+:Date:   $date$
+$endif$
+$if(author)$
+
+$else$
+$if(date)$
+
+$endif$
+$endif$
+$if(math)$
+.. role:: math(raw)
+   :format: html latex
+
+$endif$
+$if(toc)$
+.. contents::
+
+$endif$
+$for(header-includes)$
+$header-includes$
+
+$endfor$
+$body$

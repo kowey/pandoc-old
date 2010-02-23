@@ -4,7 +4,7 @@ Pandoc Test Suite
 
 :Author: John MacFarlane
 :Author: Anonymous
-:Date: July 17, 2006
+:Date:   July 17, 2006
 
 .. role:: math(raw)
    :format: html latex
@@ -384,6 +384,43 @@ Multiple blocks with italics:
 
         orange block quote
 
+
+
+Multiple definitions, tight:
+
+apple
+    red fruit
+    computer
+orange
+    orange fruit
+    bank
+
+Multiple definitions, loose:
+
+apple
+    red fruit
+
+    computer
+
+orange
+    orange fruit
+
+    bank
+
+
+Blank line after term, indented marker, alternate markers:
+
+apple
+    red fruit
+
+    computer
+
+orange
+    orange fruit
+
+    
+    1. sublist
+    2. sublist
 
 
 HTML Blocks
@@ -850,3 +887,4 @@ indented.
 
 .. |lalune| image:: lalune.jpg
 .. |movie| image:: movie.jpg
+

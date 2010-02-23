@@ -35,11 +35,10 @@ import Data.Generics
 
 data Pandoc = Pandoc Meta [Block] deriving (Eq, Read, Show, Typeable, Data)
 
--- | Bibliographic information for the document:  title (list of 'Inline'),
--- authors (list of strings), date (string).
-data Meta = Meta [Inline] -- title
-                 [String] -- authors
-                 String   -- date
+-- | Bibliographic information for the document:  title, authors, date.
+data Meta = Meta [Inline]   -- title
+                 [[Inline]] -- list of authors
+                 [Inline]   -- date
             deriving (Eq, Show, Read, Typeable, Data)
 
 -- | Alignment of a table column.
@@ -79,16 +78,17 @@ data Block
                             -- and a list of items, each a list of blocks)
     | BulletList [[Block]]  -- ^ Bullet list (list of items, each
                             -- a list of blocks)
-    | DefinitionList [([Inline],[Block])]  -- ^ Definition list 
-                            -- (list of items, each a pair of an inline list,
-                            -- the term, and a block list)
+    | DefinitionList [([Inline],[[Block]])]  -- ^ Definition list 
+                            -- Each list item is a pair consisting of a
+                            -- term (a list of inlines) and one or more
+                            -- definitions (each a list of blocks)
     | Header Int [Inline]   -- ^ Header - level (integer) and text (inlines) 
     | HorizontalRule        -- ^ Horizontal rule
     | Table [Inline] [Alignment] [Double] [[Block]] [[[Block]]]  -- ^ Table,
                             -- with caption, column alignments,
-                            -- relative column widths, column headers
-                            -- (each a list of blocks), and rows
-                            -- (each a list of lists of blocks)
+                            -- relative column widths (0 = default),
+                            -- column headers (each a list of blocks), and
+                            -- rows (each a list of lists of blocks)
     | Null                  -- ^ Nothing
     deriving (Eq, Read, Show, Typeable, Data)
 

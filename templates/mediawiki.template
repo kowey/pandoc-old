@@ -1,0 +1,8 @@
+$if(legacy-header)$
+$legacy-header$
+$endif$
+$if(toc)$
+__TOC__
+
+$endif$
+$body$

@@ -1,4 +1,3 @@
-{-# LANGUAGE TemplateHaskell #-}
 {-
 Copyright (C) 2008 John MacFarlane <jgm@berkeley.edu>
 
@@ -29,7 +28,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 Functions for producing an ODT file from OpenDocument XML.
 -}
 module Text.Pandoc.ODT ( saveOpenDocumentAsODT ) where
-import Text.Pandoc.TH ( makeZip )
 import Data.List ( find )
 import System.FilePath ( (</>), takeFileName )
 import qualified Data.ByteString.Lazy as B
@@ -39,14 +37,30 @@ import Codec.Archive.Zip
 import Control.Applicative ( (<$>) )
 import Text.ParserCombinators.Parsec
 import System.Time
+import Paths_pandoc ( getDataFileName )
+import System.Directory
+import Control.Monad (liftM)
 
 -- | Produce an ODT file from OpenDocument XML.
-saveOpenDocumentAsODT :: FilePath    -- ^ Pathname of ODT file to be produced.
-                      -> FilePath    -- ^ Relative directory of source file.
-                      -> String      -- ^ OpenDocument XML contents.
+saveOpenDocumentAsODT :: Maybe FilePath -- ^ Path of user data directory
+                      -> FilePath       -- ^ Pathname of ODT file to be produced
+                      -> FilePath       -- ^ Relative directory of source file
+                      -> Maybe FilePath -- ^ Path specified by --reference-odt
+                      -> String         -- ^ OpenDocument XML contents
                       -> IO ()
-saveOpenDocumentAsODT destinationODTPath sourceDirRelative xml = do
-  let refArchive = read $(makeZip $ "data" </> "odt-styles")
+saveOpenDocumentAsODT datadir destinationODTPath sourceDirRelative mbRefOdt xml = do
+  refArchive <- liftM toArchive $
+       case mbRefOdt of
+             Just f -> B.readFile f
+             Nothing -> do
+               let defaultODT = getDataFileName "reference.odt" >>= B.readFile
+               case datadir of
+                     Nothing  -> defaultODT
+                     Just d   -> do
+                        exists <- doesFileExist (d </> "reference.odt")
+                        if exists
+                           then B.readFile (d </> "reference.odt")
+                           else defaultODT
   -- handle pictures
   let (newContents, pics) = 
         case runParser pPictures [] "OpenDocument XML contents" xml of

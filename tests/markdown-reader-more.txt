@@ -51,3 +51,16 @@
 
 $\$2 + \$3$
 
+## Commented-out list item
+
+- one
+<!--
+- two
+-->
+- three
+
+## Backslash newline
+
+hi\
+there
+

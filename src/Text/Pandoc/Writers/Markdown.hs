@@ -31,10 +31,11 @@ Markdown:  <http://daringfireball.net/projects/markdown/>
 -}
 module Text.Pandoc.Writers.Markdown ( writeMarkdown) where
 import Text.Pandoc.Definition
+import Text.Pandoc.Templates (renderTemplate)
 import Text.Pandoc.Shared 
 import Text.Pandoc.Blocks
 import Text.ParserCombinators.Parsec ( parse, GenParser )
-import Data.List ( group, isPrefixOf, drop, find, intersperse, intercalate )
+import Data.List ( group, isPrefixOf, find, intersperse, transpose )
 import Text.PrettyPrint.HughesPJ hiding ( Str )
 import Control.Monad.State
 
@@ -45,32 +46,42 @@ type WriterState = (Notes, Refs)
 -- | Convert Pandoc to Markdown.
 writeMarkdown :: WriterOptions -> Pandoc -> String
 writeMarkdown opts document = 
-  render $ evalState (pandocToMarkdown opts document) ([],[]) 
+  evalState (pandocToMarkdown opts document) ([],[]) 
 
 -- | Return markdown representation of document.
-pandocToMarkdown :: WriterOptions -> Pandoc -> State WriterState Doc
-pandocToMarkdown opts (Pandoc meta blocks) = do
-  let before  = writerIncludeBefore opts
-  let after   = writerIncludeAfter opts
-  let header  = writerHeader opts
-  let before' = if null before then empty else text before
-  let after'  = if null after then empty else text after
-  let header' = if null header then empty else text header
-  metaBlock <- metaToMarkdown opts meta
-  let head' = if writerStandalone opts
-                then metaBlock $+$ header'
-                else empty
+pandocToMarkdown :: WriterOptions -> Pandoc -> State WriterState String
+pandocToMarkdown opts (Pandoc (Meta title authors date) blocks) = do
+  title' <- inlineListToMarkdown opts title
+  authors' <- mapM (inlineListToMarkdown opts) authors
+  date' <- inlineListToMarkdown opts date
+  let titleblock = not $ null title && null authors && null date
   let headerBlocks = filter isHeaderBlock blocks
   let toc = if writerTableOfContents opts 
                then tableOfContents opts headerBlocks
                else empty
   body <- blockListToMarkdown opts blocks
+  let before = if null (writerIncludeBefore opts)
+                  then empty
+                  else text $ writerIncludeBefore opts
+  let after = if null (writerIncludeAfter opts)
+                  then empty
+                  else text $ writerIncludeAfter opts
   (notes, _) <- get
   notes' <- notesToMarkdown opts (reverse notes)
   (_, refs) <- get  -- note that the notes may contain refs
   refs' <- keyTableToMarkdown opts (reverse refs)
-  return $ head' $+$ before' $+$ toc $+$ body $+$ text "" $+$ 
-           notes' $+$ text "" $+$ refs' $+$ after'
+  let main = render $ before $+$ body $+$ text "" $+$ notes' $+$ text "" $+$ refs' $+$ after
+  let context  = writerVariables opts ++
+                 [ ("toc", render toc)
+                 , ("body", main)
+                 , ("title", render title')
+                 , ("date", render date')
+                 ] ++
+                 [ ("titleblock", "yes") | titleblock ] ++
+                 [ ("author", render a) | a <- authors' ]
+  if writerStandalone opts
+     then return $ renderTemplate context $ writerTemplate opts
+     else return main
 
 -- | Return markdown representation of reference key table.
 keyTableToMarkdown :: WriterOptions -> KeyTable -> State WriterState Doc
@@ -104,30 +115,6 @@ escapeString :: String -> String
 escapeString = escapeStringUsing markdownEscapes
   where markdownEscapes = backslashEscapes "\\`*_>#~^"
 
--- | Convert bibliographic information into Markdown header.
-metaToMarkdown :: WriterOptions -> Meta -> State WriterState Doc
-metaToMarkdown _ (Meta [] [] []) = return empty
-metaToMarkdown opts (Meta title authors date) = do
-  title'   <- titleToMarkdown opts title
-  authors' <- authorsToMarkdown authors
-  date'    <- dateToMarkdown date
-  return $ title' $+$ authors' $+$ date' $+$ text ""
-
-titleToMarkdown :: WriterOptions -> [Inline] -> State WriterState Doc
-titleToMarkdown _    []  = return empty
-titleToMarkdown opts lst = do
-  contents <- inlineListToMarkdown opts lst
-  return $ text "% " <> contents 
-
-authorsToMarkdown :: [String] -> State WriterState Doc
-authorsToMarkdown [] = return empty
-authorsToMarkdown lst = return $ 
-  text "% " <> text (intercalate ", " (map escapeString lst))
-
-dateToMarkdown :: String -> State WriterState Doc
-dateToMarkdown [] = return empty
-dateToMarkdown str = return $ text "% " <> text (escapeString str)
-
 -- | Construct table of contents from list of header blocks.
 tableOfContents :: WriterOptions -> [Block] -> Doc 
 tableOfContents opts headers =
@@ -138,7 +125,7 @@ tableOfContents opts headers =
 -- | Converts an Element to a list item for a table of contents,
 elementToListItem :: Element -> [Block]
 elementToListItem (Blk _) = []
-elementToListItem (Sec _ _ headerText subsecs) = [Plain headerText] ++ 
+elementToListItem (Sec _ _ _ headerText subsecs) = [Plain headerText] ++ 
   if null subsecs
      then []
      else [BulletList $ map elementToListItem subsecs]
@@ -198,6 +185,7 @@ blockToMarkdown opts (Header level inlines) = do
                             _  -> empty
      else return $ text ((replicate level '#') ++ " ") <> contents <> text "\n"
 blockToMarkdown opts (CodeBlock (_,classes,_) str) | "haskell" `elem` classes &&
+                                                     "literate" `elem` classes &&
                                                      writerLiterateHaskell opts =
   return $ (vcat $ map (text "> " <>) $ map text (lines str)) <> text "\n"
 blockToMarkdown opts (CodeBlock _ str) = return $
@@ -217,25 +205,29 @@ blockToMarkdown opts (Table caption aligns widths headers rows) =  do
                      then empty
                      else text "" $+$ (text "Table: " <> caption')
   headers' <- mapM (blockListToMarkdown opts) headers
-  let widthsInChars = map (floor . (78 *)) widths
   let alignHeader alignment = case alignment of
                                 AlignLeft    -> leftAlignBlock
                                 AlignCenter  -> centerAlignBlock
                                 AlignRight   -> rightAlignBlock
                                 AlignDefault -> leftAlignBlock  
+  rawRows <- mapM (mapM (blockListToMarkdown opts)) rows
+  let isSimple = all (==0) widths
+  let numChars = maximum . map (length . render)
+  let widthsInChars =
+       if isSimple
+          then map ((+2) . numChars) $ transpose (headers' : rawRows)
+          else map (floor . (78 *)) widths
   let makeRow = hsepBlocks . (zipWith alignHeader aligns) . 
                 (zipWith docToBlock widthsInChars)
   let head' = makeRow headers'
-  rows' <- mapM (\row -> do cols <- mapM (blockListToMarkdown opts) row
-                            return $ makeRow cols) rows
+  let rows' = map makeRow rawRows
   let maxRowHeight = maximum $ map heightOfBlock (head':rows')
-  let isMultilineTable = maxRowHeight > 1
   let underline = hsep $ 
                   map (\width -> text $ replicate width '-') widthsInChars
-  let border = if isMultilineTable
+  let border = if maxRowHeight > 1
                   then text $ replicate (sum widthsInChars + (length widthsInChars - 1)) '-'
                   else empty
-  let spacer = if isMultilineTable
+  let spacer = if maxRowHeight > 1
                   then text ""
                   else empty
   let body = vcat $ intersperse spacer $ map blockToDoc rows'
@@ -274,15 +266,14 @@ orderedListItemToMarkdown opts marker items = do
 
 -- | Convert definition list item (label, list of blocks) to markdown.
 definitionListItemToMarkdown :: WriterOptions
-                             -> ([Inline],[Block]) 
+                             -> ([Inline],[[Block]]) 
                              -> State WriterState Doc
-definitionListItemToMarkdown opts (label, items) = do
+definitionListItemToMarkdown opts (label, defs) = do
   labelText <- inlineListToMarkdown opts label
   let tabStop = writerTabStop opts
   let leader  = char ':'
-  contents <- mapM (\item -> blockToMarkdown opts item >>= 
-                   (\txt -> return (leader $$ nest tabStop txt)))
-                   items >>= return . vcat
+  contents <- liftM vcat $
+    mapM (liftM ((leader $$) . nest tabStop . vcat) . mapM (blockToMarkdown opts))           defs
   return $ labelText $+$ contents
 
 -- | Convert list of Pandoc block elements to markdown.

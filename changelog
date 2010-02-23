@@ -1,3 +1,305 @@
+pandoc (1.4.1)
+
+  [ John MacFarlane ]
+
+  * Text.Pandoc.Templates now exports getTemplate, which differs from
+    getDefaultTemplate in allowing the caller to select
+    whether to allow user overrides from the ~/.pandoc directory.
+
+  * Changed default of writerXeTeX to False.
+
+  * HTML writer: don't include empty UL if --toc but no sections.
+    Resolves Issue #199.
+
+  * Updated haddocks for changes in Meta type.
+
+  * LaTeX writer:
+	  + if book, report, or memoir documentclass, use \chapter{}
+      for first-level headers. Otherwise use \section{}.
+    + removed stLink, link template variable. Reason: we now always
+      include hyperref in the template.
+
+  * Latex template:
+	  + only show \author if there are some.
+    + always include hyperref package. It is used not just for links but
+      for toc, section heading bookmarks, footnotes, etc. Also added
+      unicode=true on hyperref options.
+
+  * markdown2pdf: always do at least two runs. hyperref bookmarks
+    require this.
+
+  * Makefile:  specify --template explicitly when using pandoc.
+    Reason:  pandoc may not yet have been installed, so the
+    templates may not be in the cabal data directory.
+    Resolves Issue #192.
+
+  * cabal file: Removed unneeded dependency on template-haskell.
+
+  * Windows installer - fixed bug in data file locations.
+    Resolves Issue #197.
+
+  * Deprecated --custom-header in documentation.
+    Removed old "Custom Headers" section in README.
+
+pandoc (1.4)
+
+  [ John MacFarlane ]
+
+  * Pandoc will now compile with either GHC 6.10 or 6.12.
+    + Don't use System.IO.UTF8 when compiling with 6.12
+    + Use -fno-warn-unused-do-bind option when compiling with 6.12
+
+  * Replaced old headers with templates.  Now users have much more
+    control over the way documents appear in --standalone mode,
+    and writer code is simplified.  Resolves Issues #59, 147.
+    Every effort has been made to retain backwards compatibilty.
+    So, the --custom-header option should still work as before.
+
+    + Added Text.Pandoc.Templates.  This provides functions for
+      retrieving default templates and for rendering templates.
+    + System templates (in the pandoc data directory) can be
+      overridden by user templates in $HOME/.pandoc/templates.
+    + Removed Text.Pandoc.DefaultHeaders.
+    + Removed data/headers directory.
+    + Added templates directory.
+    + Added writerTemplate and writerVariables fields to WriterOptions.
+    + Removed writerTitlePrefix, writerHeader fields from WriterOptions.
+    + Changed --print-default-header to --print-default-template.
+    + Added --template option.
+    + Added -V/--variable option to set custom template variables.
+
+  * Pandoc no longer requires Template Haskell.  Resolves Issue #186.
+
+    + Removed need for TH in ODT module. Instead get reference.odt from
+	  data file at run time.
+    + Removed TH dependency from S5 module. S5 module now exports
+      s5HeaderIncludes, which pandoc.hs includes if writer is s5 and
+      standalone.
+    + Refactored LaTeXMathML not to use TH.
+
+  * Meta is now Meta [Inline] [[Inline]] [Inline] rather than
+    Meta [Inline] [String] String. Authors and date in Meta are now lists
+    of Inline elements rather than raw strings. This means that they can
+    be formatted and can include footnotes. NOTE: This may be a breaking
+    change for those using pandoc as a library.
+
+  * Added readDataFile to Text.Pandoc.Shared.  This retrieves
+    a data file from the user pandoc data directory (~/.pandoc
+    on unix), or, if not found there, from the system data
+    directory ($CABALDIR/shared/pandoc-VERSION/). All data
+    files, including templates, LaTeXMathML.js, s5 styles,
+	and reference.odt, can be overridden by the user.
+
+  * s5 files moved from data/ui/default to s5/default.
+
+  * Use unicode instead of entities in HTML and XML output.  Resolves
+    Issue #163.
+
+  * Prettier HTML footnote references:  put anchor inside sup,
+    instead of other way.  Resolves Issue #191. Thanks to
+    infinity0x.
+
+  * Added --xetex option to pandoc and markdown2pdf.
+    If --xetex is specified, pandoc produces latex suitable for
+    processing by xelatex, and markdown2pdf uses xelatex to create
+    the PDF. Resolves Issue #185.
+
+  * RTF writer: multiple authors now occupy multiple paragraphs rather
+    than using a line break.
+
+  * Man writer: now the "--after-body" will come after the "AUTHORS"
+    section, whereas before it would come before it.  This is a
+    slight break from backwards compatibility.
+
+  * Added --reference-odt option, so users may customize the styles
+    used in pandoc-generated ODT files.  Users may also place a
+	default reference.odt in the ~\.pandoc directory.
+
+  * ODT writer:
+    + Indented and line-broke styles.xml so it can be modified more easily.
+    + Omitted some unnecessary style declarations.
+    + Don't wrap text in OpenDocument writer.  The tags are too long, making
+      wrapping ugly and pointless.
+
+  * LaTeX reader: use \\ to separate multiple authors.
+
+  * Markdown reader: use ; as separator between authors.
+    This allows you to use ',' within author names: e.g. "John Jones, Jr."
+
+  * S5 writer: use linebreak to separate authors in title page.
+
+  * RST reader: Allow :: before lhs code block. The RST spec requires the
+    :: before verbatim blocks. This :: should not be treated as literal
+    colons. Resolves Issue #189.
+
+  * Documented pandoc 1.3's new definition list syntax in README.
+    (An oversight in the last release.)
+
+  * markdown2pdf.hs:
+    + interpret ! in a log as an error line.
+    + --toc now works properly.
+
+  * Changes in RunTests.hs:
+    + Use the Diff library rather than a local copy of Diff.hs.
+      (This vastly increases performance.) This change means that 'cabal
+      test' presupposes that the Diff library is installed.
+    + Removed tests/Diff.hs from cabal file.
+    + Changed RunTests to use local environment. We need at least HOME, so
+      pandoc can find its data directory.
+
+  * Updated windows installer to install data files in the app directory.
+
+  * Windows installer now installs portable wrappers hsmarkdown and
+    markdown2pdf.
+
+pandoc (1.3)
+
+  [ John MacFarlane ]
+
+  * Added --id-prefix option (Issue #41). This adds a prefix to all
+    automatically generated HTML identifiers, which helps prevent
+    duplicate identifiers when you're generating a fragment (say a blog
+    post).
+
+  * Added --indented-code-classes option.  This specifies classes
+    to use for indented code blocks.  (Patch due to buttock; Issue #87.)
+
+  * --number-sections now affects HTML output as well as ConTeXt and LaTeX
+    (Issue #150).
+
+  * Improved syntax for markdown definition lists (Issue #24).
+    Definition lists are now more compatible with PHP Markdown Extra.
+    + You can have multiple definitions for a term (but still not
+      multiple terms).
+    + Multi-block definitions no longer need a column before each block
+      (indeed, this will now cause multiple definitions).
+    + The marker no longer needs to be flush with the left margin,
+      but can be indented at or two spaces.  Also, ~ as well as :
+      can be used as the marker (this suggestion due to David
+      Wheeler.)
+    + There can now be a blank line between the term and the
+      definitions.
+
+  * Better looking simple tables.  Resolves Issue #180.
+    + Markdown reader: simple tables are now given column widths of 0.
+    + Column width of 0 is interpreted as meaning: use default column width.
+    + Writers now include explicit column width information only
+      for multiline tables.  (Exception:  RTF writer, which requires
+      column widths.  In this case, columns are given equal widths,
+      adding up to the text width.)
+    + Simple tables should now look better in most output formats.
+
+  * Allow markdown tables without headers (Issue #50).
+    The new syntax is described in README. Also allow optional line of
+    dashes at bottom of simple tables.
+
+  * Compensate for width of final table column (Issue #144).
+
+  * Treat a backslash followed by a newline as a hard line break
+    in markdown.  Resolves Issue #154.  This is a nice alternative
+	to markdown's "invisible" way of indicating hardline breaks
+	using lines that end with two spaces.
+
+  * Improved performance of markdown reader by ~10% by eliminating the
+    need for a separate parsing pass for notes. Raw notes are now stored
+    on the first pass (which parses references), then parsed when the
+    note is inserted into the AST. The stateNotes field in ParserState
+    is now a list of [(String, String)] pairs instead of [(String,
+    [Block])].
+
+  * In markdown reader, treat 4 or more * or _ in a row as literal
+    text.  (Trying to parse long strings of * or _ as strong or emph
+	leads to exponential performance problems.)
+
+  * Markdown reader: Use + rather than %20 for spaces in URLs.
+
+  * Fixed htmlComment parser, adding a needed 'try'.
+
+  * Don't print raw HTML in man output.
+
+  * Allow . _ and ~ in header identifiers.
+
+  * Specially mark code blocks that were "literate" in the input.
+    They can then be treated differently in the writers.  This allows
+    authors to distinguish bits of the literate program they are writing
+    from source code examples, even if the examples are marked as
+    Haskell for highlighting.  (Issue #174.)
+
+  * Modified html+lhs output to use "haskell" highlighter instead
+    of "literateHaskell". The highlighting module now adds bird tracks
+	after highlighting (for HTML output), if the code block has the
+	"literate" class.  This gives better results, because kate's
+    haskell highlighter is much better than the literateHaskell
+    highlighter.
+
+  * Fixed handling of footnotes in titles (HTML) and headers (LaTeX).
+    (Issue #137.)
+
+  * Support for "..code-block" directive in RST reader. Not core
+    RST, but used in Sphinx for code blocks annotated with syntax
+    information. Thanks to Luke Plant for the patch.
+
+  * Added "head" to list of block-level HTML tags. Resolves
+    Issue #108.
+
+  * Added stripTags to Text.Pandoc.XML.  This is used in the HTML writer.
+
+  * Set utf-8 encoding in texinfo headers.
+
+  * Docbook writer: add ids to sections.  Use link for internal links.
+    (Issue #60.)
+
+  * Blank lines after lists in MediaWiki writer.
+
+  * Properly handle commented-out list items in markdown.
+    Resolves Issue #142.  Example:
+
+    - a
+    <!--
+    - b
+    -->
+    - c
+
+  * Changed heuristic in compactify. compactify has to decide whether a
+    Para that ends a list is a Para intentionally, or just because of
+    the blank lines at the end of every list. In the latter case the
+    Para is turned to a Plain. The old heuristic was: change final Para
+    to Plain iff the other items all end in Plain. This produces bad
+    results when, for example, an item contains just a Plain and an HTML
+    comment, as it does in the list above. The new heuristic: change
+    final Para to Plain iff the other items don't contain a Para.
+
+  * Added % as an rst underline character.  Resolves Issue #173.
+
+  * Fix inline math parser so that \$ is allowed in math.
+    Resolves Issue #169.
+
+  * Translate \int (integral) into unicode when using unicode math
+    method. Resolves Issue #177.
+
+  * markdown2pdf.hs improvements:
+    + Use System.IO.UTF8.
+    + Print error messages on last attempt.
+    + Do not create a backup when overwriting a PDF (Issue #166).
+    + Accept --longopt=val options.
+    + Added man/man1/markdown2pdf.1 to extra-tmp-files in cabal, so that
+      it is properly cleaned.
+
+  * Added haddock comments warning that readers assume \n line endings.
+
+  * Updated COPYRIGHT file.
+
+  * Makefile: Changed EXECSBASE so it doesn't pull in hsmarkdown &
+    markdown2pdf. Otherwise strip tries to strip shell scripts when you
+    install using 'make'.
+
+  * Changed Makefile so it doesn't build Haskell wrappers.
+
+  * Fixed Makefile so it doesn't try to build man pages in build-doc.
+
+  * Install pcre3.dll in Windows install script; this allows us to
+    package a version of pandoc with highlighting support.
+
 pandoc (1.2.1)
 
   [ John MacFarlane ]

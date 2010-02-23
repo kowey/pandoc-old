@@ -36,14 +36,16 @@ inline links:
 
 > module Main where
 > import Text.Pandoc
-> import qualified System.IO.UTF8 as U
+> -- include the following two lines only if you're using ghc < 6.12:
+> import Prelude hiding (getContents, putStrLn)
+> import System.IO.UTF8
 >
 > markdownToRST :: String -> String
 > markdownToRST =
 >   (writeRST defaultWriterOptions {writerReferenceLinks = True}) .
 >   readMarkdown defaultParserState
 > 
-> main = U.getContents >>= U.putStrLn . markdownToRST
+> main = getContents >>= putStrLn . markdownToRST
 
 Note:  all of the readers assume that the input text has @'\n'@
 line endings.  So if you get your input text from a web form,
@@ -89,8 +91,8 @@ module Text.Pandoc
                , WriterOptions (..)
                , HTMLMathMethod (..)
                , defaultWriterOptions
-               -- * Default headers for various output formats
-               , module Text.Pandoc.DefaultHeaders
+               -- * Rendering templates and default templates
+               , module Text.Pandoc.Templates
                -- * Version
                , pandocVersion
              ) where
@@ -113,7 +115,7 @@ import Text.Pandoc.Writers.OpenDocument
 import Text.Pandoc.Writers.Man
 import Text.Pandoc.Writers.RTF 
 import Text.Pandoc.Writers.MediaWiki
-import Text.Pandoc.DefaultHeaders
+import Text.Pandoc.Templates
 import Text.Pandoc.Shared
 import Data.Version (showVersion)
 import Paths_pandoc (version)

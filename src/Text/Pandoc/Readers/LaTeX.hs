@@ -169,12 +169,12 @@ header :: GenParser Char ParserState Block
 header = try $ do
   char '\\'
   subs <- many (try (string "sub"))
-  string "section"
+  base <- try (string "section" >> return 1) <|> (string "paragraph" >> return 4)
   optional (char '*')
   char '{'
   title' <- manyTill inline (char '}')
   spaces
-  return $ Header (length subs + 1) (normalizeSpaces title')
+  return $ Header (length subs + base) (normalizeSpaces title')
 
 --
 -- hrule block
@@ -207,7 +207,7 @@ lhsCodeBlock :: GenParser Char ParserState Block
 lhsCodeBlock = do
   failUnlessLHS
   (CodeBlock (_,_,_) cont) <- codeBlockWith "code"
-  return $ CodeBlock ("", ["sourceCode","haskell"], []) cont
+  return $ CodeBlock ("", ["sourceCode","literate","haskell"], []) cont
 
 --
 -- block quotes
@@ -282,7 +282,7 @@ definitionList = try $ do
   items <- many listItem
   end "description"
   spaces
-  return (DefinitionList items)
+  return $ DefinitionList $ map (\(t,d) -> (t,[d])) items
 
 --
 -- paragraph block
@@ -317,19 +317,19 @@ title = try $ do
 authors :: GenParser Char ParserState Block
 authors = try $ do
   string "\\author{"
-  authors' <- manyTill anyChar (char '}')
+  raw <- many1 (notFollowedBy (char '}') >> inline)
+  let authors' = map normalizeSpaces $ splitBy LineBreak raw
+  char '}'
   spaces
-  let authors'' = map removeLeadingTrailingSpace $ lines $
-                  substitute "\\\\" "\n" authors'
-  updateState (\s -> s { stateAuthors = authors'' })
+  updateState (\s -> s { stateAuthors = authors' })
   return Null
 
 date :: GenParser Char ParserState Block
 date = try $ do
   string "\\date{"
-  date' <- manyTill anyChar (char '}')
+  date' <- manyTill inline (char '}')
   spaces
-  updateState (\state -> state { stateDate = date' })
+  updateState (\state -> state { stateDate = normalizeSpaces date' })
   return Null
 
 --

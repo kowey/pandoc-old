@@ -57,7 +57,7 @@ click on the name of the output file:
 
 12. Converting a web page to markdown:
 
-@   html2markdown @@http://www.gnu.org/software/make/@@ -o @@example12.text@@
+@   pandoc -s -r html @@http://www.gnu.org/software/make/@@ -o @@example12.text@@
 
 13. From markdown to PDF:
 
@@ -65,14 +65,14 @@ click on the name of the output file:
 
 14. PDF with numbered sections and a custom LaTeX header:
 
-@   markdown2pdf -N -C @@myheader.tex@@ @@README@@ -o @@example14.pdf@@
+@   markdown2pdf -N --template=@@mytemplate.tex@@ --variable version=1.4 @@README@@ --xetex --toc -o @@example14.pdf@@
 
 [xmlto]:  http://cyberelk.net/tim/xmlto/
 
-15. A simple wiki program using [HAppS](http://happs.org) and pandoc: 
-    [pandocwiki](http://pandocwiki.googlecode.com/svn/trunk/)
+15. A wiki program using [Happstack](http://happstack.com) and pandoc:
+    [gitit](http://gitit.net)
 
-16. A web application that converts web pages to any of eight different
+16. A web application that uses pandoc to convert web pages to any of eight different
     formats:  [html2x](html2x.html).
 
 17. TeX math in HTML:

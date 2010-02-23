@@ -38,6 +38,7 @@ module Text.Pandoc.Readers.HTML (
                                  htmlEndTag,
                                  extractTagType,
                                  htmlBlockElement,
+                                 htmlComment,
                                  unsanitaryURI
                                 ) where
 
@@ -46,9 +47,10 @@ import Text.Pandoc.Definition
 import Text.Pandoc.Shared 
 import Text.Pandoc.CharacterReferences ( decodeCharacterReferences )
 import Data.Maybe ( fromMaybe )
-import Data.List ( takeWhile, dropWhile, isPrefixOf, isSuffixOf, intercalate )
+import Data.List ( isPrefixOf, isSuffixOf, intercalate )
 import Data.Char ( toLower, isAlphaNum )
 import Network.URI ( parseURIReference, URI (..) )
+import Control.Monad ( liftM )
 
 -- | Convert HTML-formatted string to 'Pandoc' document.
 readHtml :: ParserState   -- ^ Parser state
@@ -70,16 +72,16 @@ inlineHtmlTags = ["a", "abbr", "acronym", "b", "basefont", "bdo", "big",
                   "br", "cite", "code", "dfn", "em", "font", "i", "img",
                   "input", "kbd", "label", "q", "s", "samp", "select",
                   "small", "span", "strike", "strong", "sub", "sup",
-                  "textarea", "tt", "u", "var"] ++ eitherBlockOrInline
+                  "textarea", "tt", "u", "var"]
 -}
 
 blockHtmlTags :: [[Char]]
 blockHtmlTags = ["address", "blockquote", "body", "center", "dir", "div",
                  "dl", "fieldset", "form", "h1", "h2", "h3", "h4",
-                 "h5", "h6", "hr", "html", "isindex", "menu", "noframes",
+                 "h5", "h6", "head", "hr", "html", "isindex", "menu", "noframes",
                  "noscript", "ol", "p", "pre", "table", "ul", "dd",
                  "dt", "frameset", "li", "tbody", "td", "tfoot",
-                 "th", "thead", "tr", "script"] ++ eitherBlockOrInline
+                 "th", "thead", "tr", "script", "style"]
 
 sanitaryTags :: [[Char]]
 sanitaryTags = ["a", "abbr", "acronym", "address", "area", "b", "big",
@@ -110,6 +112,40 @@ sanitaryAttributes = ["abbr", "accept", "accept-charset",
                       "shape", "size", "span", "src", "start",
                       "summary", "tabindex", "target", "title", "type",
                       "usemap", "valign", "value", "vspace", "width"]
+
+-- taken from HXT and extended
+
+closes :: String -> String -> Bool
+"EOF" `closes` _ = True
+_ `closes` "body" = False
+_ `closes` "html" = False
+"a" `closes` "a" = True
+"li" `closes` "li" = True
+"th" `closes` t | t `elem` ["th","td"] = True
+"td" `closes` t | t `elem` ["th","td"] = True
+"tr" `closes` t | t `elem` ["th","td","tr"] = True
+"dt" `closes` t | t `elem` ["dt","dd"] = True
+"dd" `closes` t | t `elem` ["dt","dd"] = True
+"hr" `closes` "p" = True
+"p" `closes` "p" = True
+"meta" `closes` "meta" = True
+"colgroup" `closes` "colgroup" = True
+"form" `closes` "form" = True
+"label" `closes` "label" = True
+"map" `closes` "map" = True
+"object" `closes` "object" = True
+_ `closes` t | t `elem` ["option","style","script","textarea","title"] = True
+t `closes` "select" | t /= "option" = True
+"thead" `closes` t | t `elem` ["colgroup"] = True
+"tfoot" `closes` t | t `elem` ["thead","colgroup"] = True
+"tbody" `closes` t | t `elem` ["tbody","tfoot","thead","colgroup"] = True
+t `closes` t2 |
+   t `elem` ["h1","h2","h3","h4","h5","h6","dl","ol","ul","table","div","p"] &&
+   t2 `elem` ["h1","h2","h3","h4","h5","h6","p" ] = True -- not "div"
+t1 `closes` t2 |
+   t1 `elem` blockHtmlTags &&
+   t2 `notElem` (blockHtmlTags ++ eitherBlockOrInline) = True
+_ `closes` _ = False
 
 --
 -- HTML utility functions
@@ -174,6 +210,19 @@ extractTagType ('<':rest) =
   let isSpaceOrSlash c = c `elem` "/ \n\t" in
   map toLower $ takeWhile isAlphaNum $ dropWhile isSpaceOrSlash rest
 extractTagType _ = ""
+
+-- Parse any HTML tag (opening or self-closing) and return tag type
+anyOpener :: GenParser Char ParserState [Char]
+anyOpener = try $ do
+  char '<'
+  spaces
+  tag <- many1 alphaNum
+  skipMany htmlAttribute
+  spaces
+  option "" (string "/")
+  spaces
+  char '>'
+  return $ map toLower tag 
 
 -- | Parse any HTML tag (opening or self-closing) and return text of tag
 anyHtmlTag :: GenParser Char ParserState [Char]
@@ -256,32 +305,30 @@ htmlRegularAttribute = try $ do
   (content, quoteStr) <- choice [ (quoted '\''), 
                                   (quoted '"'), 
                                   (do
-                                     a <- many (alphaNum <|> (oneOf "-._:"))
+                                     a <- many (noneOf " \t\n\r\"'<>")
                                      return (a,"")) ]
   return (name, content,
           (name ++ "=" ++ quoteStr ++ content ++ quoteStr))
 
 -- | Parse an end tag of type 'tag'
-htmlEndTag :: [Char] -> GenParser Char st [Char]
+htmlEndTag :: [Char] -> GenParser Char ParserState [Char]
 htmlEndTag tag = try $ do
-  char '<'   
-  spaces
-  char '/'
-  spaces
-  stringAnyCase tag
-  spaces
-  char '>'
-  return $ "</" ++ tag ++ ">"
-
-{-
--- | Returns @True@ if the tag is (or can be) an inline tag.
-isInline :: String -> Bool
-isInline tag = (extractTagType tag) `elem` inlineHtmlTags
--}
+  closedByNext <- lookAhead $ option False $ liftM (`closes` tag) $
+                   anyOpener <|> (eof >> return "EOF")
+  if closedByNext
+     then return ""
+     else do char '<'   
+             spaces
+             char '/'
+             spaces
+             stringAnyCase tag
+             spaces
+             char '>'
+             return $ "</" ++ tag ++ ">"
 
 -- | Returns @True@ if the tag is (or can be) a block tag.
 isBlock :: String -> Bool
-isBlock tag = (extractTagType tag) `elem` blockHtmlTags 
+isBlock tag = (extractTagType tag) `elem` (blockHtmlTags ++ eitherBlockOrInline)
 
 anyHtmlBlockTag :: GenParser Char ParserState [Char]
 anyHtmlBlockTag = try $ do
@@ -297,18 +344,43 @@ anyHtmlInlineTag = try $ do
 -- Scripts must be treated differently, because they can contain '<>' etc.
 htmlScript :: GenParser Char ParserState [Char]
 htmlScript = try $ do
-  open <- string "<script"
-  rest <- manyTill anyChar (htmlEndTag "script")
+  lookAhead $ htmlTag "script"
+  open <- anyHtmlTag
+  rest <- liftM concat $ manyTill scriptChunk (htmlEndTag "script")
   st <- getState
   if stateSanitizeHTML st && not ("script" `elem` sanitaryTags)
      then return "<!-- unsafe HTML removed -->"
      else return $ open ++ rest ++ "</script>"
 
+scriptChunk :: GenParser Char ParserState [Char]
+scriptChunk = jsComment <|> jsString <|> jsChars
+  where jsComment = jsEndlineComment <|> jsMultilineComment
+        jsString  = jsSingleQuoteString <|> jsDoubleQuoteString
+        jsChars   = many1 (noneOf "<\"'*/") <|> count 1 anyChar
+        jsEndlineComment = try $ do
+           string "//"
+           res <- manyTill anyChar newline
+           return ("//" ++ res)
+        jsMultilineComment = try $ do
+           string "/*"
+           res <- manyTill anyChar (try $ string "*/")
+           return ("/*" ++ res ++ "*/")
+        jsSingleQuoteString = stringwith '\''
+        jsDoubleQuoteString = stringwith '"'
+        charWithEsc escapable = try $
+           (try $ char '\\' >> oneOf ('\\':escapable) >>= \x -> return ['\\',x])
+          <|> count 1 anyChar
+        stringwith c = try $ do
+           char c
+           res <- liftM concat $ manyTill (charWithEsc [c]) (char c)
+           return (c : (res ++ [c]))
+
 -- | Parses material between style tags.
 -- Style tags must be treated differently, because they can contain CSS
 htmlStyle :: GenParser Char ParserState [Char]
 htmlStyle = try $ do
-  open <- string "<style"
+  lookAhead $ htmlTag "style"
+  open <- anyHtmlTag
   rest <- manyTill anyChar (htmlEndTag "style")
   st <- getState
   if stateSanitizeHTML st && not ("style" `elem` sanitaryTags)
@@ -347,7 +419,7 @@ htmlComment :: GenParser Char st [Char]
 htmlComment = try $ do
   string "<!--"
   comment <- many $ noneOf "-"
-                 <|> try (char '-' >>~ notFollowedBy (char '-' >> char '>'))
+               <|> try (char '-' >>~ notFollowedBy (try (char '-' >> char '>')))
   string "-->"
   return $ "<!--" ++ comment ++ "-->"
 
@@ -381,7 +453,7 @@ parseTitle = try $ do
   return contents
 
 -- parse header and return meta-information (for now, just title)
-parseHead :: GenParser Char ParserState ([Inline], [a], [Char])
+parseHead :: GenParser Char ParserState Meta
 parseHead = try $ do
   htmlTag "head"
   spaces
@@ -389,7 +461,7 @@ parseHead = try $ do
   contents <- option [] parseTitle
   skipMany nonTitleNonHead
   htmlEndTag "head"
-  return (contents, [], "")
+  return $ Meta contents [] []
 
 skipHtmlTag :: String -> GenParser Char ParserState ()
 skipHtmlTag tag = optional (htmlTag tag)
@@ -403,23 +475,28 @@ bodyTitle = try $ do
        _            -> fail "not title"
   inlinesTilEnd "h1"
 
+endOfDoc :: GenParser Char ParserState ()
+endOfDoc = try $ do
+  spaces
+  optional (htmlEndTag "body")
+  spaces
+  optional (htmlEndTag "html" >> many anyChar) -- ignore stuff after </html>
+  eof 
+
 parseHtml :: GenParser Char ParserState Pandoc
 parseHtml = do
   sepEndBy (choice [xmlDec, definition, htmlComment]) spaces
+  spaces
   skipHtmlTag "html"
   spaces
-  (title, authors, date) <- option ([], [], "") parseHead 
+  meta <- option (Meta [] [] []) parseHead
   spaces
   skipHtmlTag "body"
   spaces
   optional bodyTitle  -- skip title in body, because it's represented in meta
   blocks <- parseBlocks
-  spaces
-  optional (htmlEndTag "body")
-  spaces
-  optional (htmlEndTag "html" >> many anyChar) -- ignore anything after </html>
-  eof
-  return $ Pandoc (Meta title authors date) blocks
+  endOfDoc
+  return $ Pandoc meta blocks
 
 --
 -- parsing blocks
@@ -437,6 +514,7 @@ block = choice [ codeBlock
                , para
                , plain
                , rawHtmlBlock'
+               , notFollowedBy' endOfDoc >> char '<' >> return Null
                ] <?> "block"
 
 --
@@ -523,7 +601,9 @@ orderedList = try $ do
                                           _              -> DefaultStyle
                               return (read sta, sty')
   spaces
-  items <- sepEndBy1 (blocksIn "li") spaces
+  -- note: if they have an <ol> or <ul> not in scope of a <li>,
+  -- treat it as a list item, though it's not valid xhtml...
+  items <- sepEndBy1 (blocksIn "li" <|> liftM (:[]) list) spaces
   htmlEndTag "ol"
   return $ OrderedList (start, style, DefaultDelim) items
 
@@ -531,7 +611,9 @@ bulletList :: GenParser Char ParserState Block
 bulletList = try $ do
   htmlTag "ul"
   spaces
-  items <- sepEndBy1 (blocksIn "li") spaces
+  -- note: if they have an <ol> or <ul> not in scope of a <li>,
+  -- treat it as a list item, though it's not valid xhtml...
+  items <- sepEndBy1 (blocksIn "li" <|> liftM (:[]) list) spaces
   htmlEndTag "ul"
   return $ BulletList items
 
@@ -544,12 +626,12 @@ definitionList = try $ do
   htmlEndTag "dl"
   return $ DefinitionList items
 
-definitionListItem :: GenParser Char ParserState ([Inline], [Block])
+definitionListItem :: GenParser Char ParserState ([Inline], [[Block]])
 definitionListItem = try $ do
   terms <- sepEndBy1 (inlinesIn "dt") spaces
   defs <- sepEndBy1 (blocksIn "dd") spaces
   let term = intercalate [LineBreak] terms
-  return (term, concat defs)
+  return (term, defs)
 
 --
 -- paragraph block
@@ -585,6 +667,7 @@ inline = choice [ charRef
                 , link
                 , image
                 , rawHtmlInline
+                , char '&' >> return (Str "&") -- common HTML error
                 ] <?> "inline"
 
 code :: GenParser Char ParserState Inline
@@ -598,7 +681,7 @@ code = try $ do
 
 rawHtmlInline :: GenParser Char ParserState Inline
 rawHtmlInline = do
-  result <- htmlScript <|> htmlStyle <|> htmlComment <|> anyHtmlInlineTag
+  result <- anyHtmlInlineTag <|> htmlComment
   state <- getState
   if stateParseRaw state then return (HtmlInline result) else return (Str "")
 
@@ -639,7 +722,7 @@ linebreak :: GenParser Char ParserState Inline
 linebreak = htmlTag "br" >> optional newline >> return LineBreak
 
 str :: GenParser Char st Inline
-str = many1 (noneOf "<& \t\n") >>= return . Str
+str = many1 (noneOf "< \t\n&") >>= return . Str
 
 --
 -- links and images

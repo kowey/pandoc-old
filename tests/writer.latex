@@ -2,24 +2,22 @@
 \usepackage{amsmath}
 \usepackage[mathletters]{ucs}
 \usepackage[utf8x]{inputenc}
-\usepackage{listings}
-\lstnewenvironment{code}{\lstset{language=Haskell,basicstyle=\small\ttfamily}}{}
+\usepackage{fancyvrb}
+\usepackage{enumerate}
+\usepackage[normalem]{ulem}
+\newcommand{\textsubscr}[1]{\ensuremath{_{\scriptsize\textrm{#1}}}}
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage[breaklinks=true,unicode=true]{hyperref}
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{6pt plus 2pt minus 1pt}
-
-\newcommand{\textsubscr}[1]{\ensuremath{_{\scriptsize\textrm{#1}}}}
-\usepackage[breaklinks=true]{hyperref}
-\usepackage[normalem]{ulem}
-\usepackage{enumerate}
-\usepackage{fancyvrb}
-\usepackage{graphicx}
-\usepackage{url}
-
 \setcounter{secnumdepth}{0}
 \VerbatimFootnotes % allows verbatim text in footnotes
+
 \title{Pandoc Test Suite}
 \author{John MacFarlane\\Anonymous}
 \date{July 17, 2006}
+
 \begin{document}
 \maketitle
 
@@ -456,6 +454,53 @@ orange block quote
 
 \end{quote}
 \end{description}
+Multiple definitions, tight:
+
+\begin{description}
+\item[apple]
+red fruit
+
+computer
+\item[orange]
+orange fruit
+
+bank
+\end{description}
+Multiple definitions, loose:
+
+\begin{description}
+\item[apple]
+red fruit
+
+
+computer
+
+\item[orange]
+orange fruit
+
+
+bank
+
+\end{description}
+Blank line after term, indented marker, alternate markers:
+
+\begin{description}
+\item[apple]
+red fruit
+
+
+computer
+
+\item[orange]
+orange fruit
+
+\begin{enumerate}[1.]
+\item
+  sublist
+\item
+  sublist
+\end{enumerate}
+\end{description}
 \section{HTML Blocks}
 
 Simple block on one line:
@@ -800,3 +845,4 @@ This paragraph should not be part of the note, as it is not
 indented.
 
 \end{document}
+

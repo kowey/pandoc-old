@@ -33,7 +33,8 @@ module Text.Pandoc.Writers.RST ( writeRST) where
 import Text.Pandoc.Definition
 import Text.Pandoc.Shared 
 import Text.Pandoc.Blocks
-import Data.List ( isPrefixOf, isSuffixOf, drop, intersperse )
+import Text.Pandoc.Templates (renderTemplate)
+import Data.List ( isPrefixOf, isSuffixOf, intersperse, transpose )
 import Text.PrettyPrint.HughesPJ hiding ( Str )
 import Control.Monad.State
 import Control.Applicative ( (<$>) )
@@ -42,7 +43,7 @@ data WriterState =
   WriterState { stNotes     :: [[Block]]
               , stLinks     :: KeyTable
               , stImages    :: KeyTable
-              , stIncludes  :: [String]
+              , stHasMath   :: Bool
               , stOptions   :: WriterOptions
               }
 
@@ -50,33 +51,38 @@ data WriterState =
 writeRST :: WriterOptions -> Pandoc -> String
 writeRST opts document = 
   let st = WriterState { stNotes = [], stLinks = [],
-                         stImages = [], stIncludes = [],
+                         stImages = [], stHasMath = False,
                          stOptions = opts }
-  in render $ evalState (pandocToRST document) st
+  in evalState (pandocToRST document) st
 
 -- | Return RST representation of document.
-pandocToRST :: Pandoc -> State WriterState Doc
-pandocToRST (Pandoc meta blocks) = do
-  opts <- get >>= (return . stOptions)
+pandocToRST :: Pandoc -> State WriterState String
+pandocToRST (Pandoc (Meta tit auth dat) blocks) = do
+  opts <- liftM stOptions get
   let before  = writerIncludeBefore opts
       after   = writerIncludeAfter opts
-      header  = writerHeader opts
       before' = if null before then empty else text before
       after'  = if null after then empty else text after
-      header' = if null header then empty else text header
-  metaBlock <- metaToRST opts meta
-  let head' = if (writerStandalone opts)
-                 then metaBlock $+$ header'
-                 else empty
+  title <- titleToRST tit
+  authors <- mapM inlineListToRST auth
+  date <- inlineListToRST dat
   body <- blockListToRST blocks
-  includes <- get >>= (return . concat . stIncludes)
-  let includes' = if null includes then empty else text includes
-  notes <- get >>= (notesToRST . reverse . stNotes)
+  notes <- liftM (reverse . stNotes) get >>= notesToRST
   -- note that the notes may contain refs, so we do them first
-  refs <- get >>= (keyTableToRST . reverse . stLinks)
-  pics <- get >>= (pictTableToRST . reverse . stImages)
-  return $ head' $+$ before' $+$ includes' $+$ body $+$ notes $+$ text "" $+$
-           refs $+$ pics $+$ after'
+  refs <- liftM (reverse . stLinks) get >>= keyTableToRST
+  pics <- liftM (reverse . stImages) get >>= pictTableToRST
+  hasMath <- liftM stHasMath get
+  let main = render $ before' $+$ body $+$ notes $+$
+                      text "" $+$ refs $+$ pics $+$ after'
+  let context = writerVariables opts ++
+                [ ("body", main)
+                , ("title", render title)
+                , ("date", render date) ] ++
+                [ ("math", "yes") | hasMath ] ++
+                [ ("author", render a) | a <- authors ]
+  if writerStandalone opts
+     then return $ renderTemplate context $ writerTemplate opts
+     else return main
 
 -- | Return RST representation of reference key table.
 keyTableToRST :: KeyTable -> State WriterState Doc
@@ -129,35 +135,13 @@ wrappedRST opts inlines = do
 escapeString :: String -> String
 escapeString = escapeStringUsing (backslashEscapes "`\\|*_")
 
--- | Convert bibliographic information into RST header.
-metaToRST :: WriterOptions -> Meta -> State WriterState Doc
-metaToRST _ (Meta [] [] []) = return empty
-metaToRST opts (Meta title authors date) = do
-  title'   <- titleToRST title
-  authors' <- authorsToRST authors
-  date'    <- dateToRST date
-  let toc  =  if writerTableOfContents opts
-                 then text "" $+$ text ".. contents::"
-                 else empty
-  return $ title' $+$ authors' $+$ date' $+$ toc $+$ text ""
-
 titleToRST :: [Inline] -> State WriterState Doc
 titleToRST [] = return empty
 titleToRST lst = do
   contents <- inlineListToRST lst
   let titleLength = length $ render contents
   let border = text (replicate titleLength '=')
-  return $ border $+$ contents $+$ border <> text "\n"
-
-authorsToRST :: [String] -> State WriterState Doc
-authorsToRST [] = return empty
-authorsToRST (first:rest) = do
-  rest' <- authorsToRST rest
-  return $ (text ":Author: " <> text first) $+$ rest'
-
-dateToRST :: String -> State WriterState Doc
-dateToRST [] = return empty
-dateToRST str = return $ text ":Date: " <> text (escapeString str)
+  return $ border $+$ contents $+$ border
 
 -- | Convert Pandoc block element to RST. 
 blockToRST :: Block         -- ^ Block element
@@ -183,7 +167,8 @@ blockToRST (Header level inlines) = do
 blockToRST (CodeBlock (_,classes,_) str) = do
   opts <- stOptions <$> get
   let tabstop = writerTabStop opts
-  if "haskell" `elem` classes && writerLiterateHaskell opts
+  if "haskell" `elem` classes && "literate" `elem` classes &&
+                  writerLiterateHaskell opts
      then return $ (vcat $ map (text "> " <>) $ map text (lines str)) <> text "\n"
      else return $ (text "::\n") $+$
                    (nest tabstop $ vcat $ map text (lines str)) <> text "\n"
@@ -197,7 +182,13 @@ blockToRST (Table caption _ widths headers rows) =  do
                      then empty
                      else text "" $+$ (text "Table: " <> caption')
   headers' <- mapM blockListToRST headers
-  let widthsInChars = map (floor . (78 *)) widths
+  rawRows <- mapM (mapM blockListToRST) rows
+  let isSimple = all (==0) widths && all (all (\bs -> length bs == 1)) rows
+  let numChars = maximum . map (length . render)
+  let widthsInChars =
+       if isSimple
+          then map ((+2) . numChars) $ transpose (headers' : rawRows)
+          else map (floor . (78 *)) widths
   let hpipeBlocks blocks = hcatBlocks [beg, middle, end] 
         where height = maximum (map heightOfBlock blocks)
               sep'   = TextBlock 3 height (replicate height " | ")
@@ -250,10 +241,10 @@ orderedListItemToRST marker items = do
   return $ (text marker <> char ' ') <> contents 
 
 -- | Convert defintion list item (label, list of blocks) to RST.
-definitionListItemToRST :: ([Inline], [Block]) -> State WriterState Doc
-definitionListItemToRST (label, items) = do
+definitionListItemToRST :: ([Inline], [[Block]]) -> State WriterState Doc
+definitionListItemToRST (label, defs) = do
   label' <- inlineListToRST label
-  contents <- blockListToRST items
+  contents <- liftM vcat $ mapM blockListToRST defs
   tabstop <- get >>= (return . writerTabStop . stOptions)
   return $ label' $+$ nest tabstop contents
 
@@ -299,12 +290,7 @@ inlineToRST Ellipses = return $ text "..."
 inlineToRST (Code str) = return $ text $ "``" ++ str ++ "``"
 inlineToRST (Str str) = return $ text $ escapeString str
 inlineToRST (Math t str) = do
-  includes <- get >>= (return . stIncludes)
-  let rawMathRole = ".. role:: math(raw)\n" ++
-                    "   :format: html latex\n"
-  if not (rawMathRole `elem` includes)
-     then modify $ \st -> st { stIncludes = rawMathRole : includes }
-     else return ()
+  modify $ \st -> st{ stHasMath = True }
   return $ if t == InlineMath
               then text $ ":math:`$" ++ str ++ "$`"
               else text $ ":math:`$$" ++ str ++ "$$`"

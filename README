@@ -1,6 +1,6 @@
 % Pandoc User's Guide
 % John MacFarlane
-% March 24, 2008
+% December 7, 2009
 
 Pandoc is a [Haskell] library for converting from one markup format to
 another, and a command-line tool that uses this library. It can read
@@ -37,7 +37,7 @@ or output format requires only adding a reader or writer.
 [Haskell]:  http://www.haskell.org/
 [GNU Texinfo]: http://www.gnu.org/software/texinfo/
 
-© 2006-8 John MacFarlane (jgm at berkeley dot edu). Released under the
+© 2006-9 John MacFarlane (jgm at berkeley dot edu). Released under the
 [GPL], version 2 or greater.  This software carries no warranty of
 any kind.  (See COPYRIGHT for full copyright and warranty notices.)
 Contributors:  Recai Oktaş (build system, debian package, wrapper
@@ -62,11 +62,16 @@ Note that you can specify multiple input files on the command line.
 `pandoc` will concatenate them all (with blank lines between them)
 before parsing:
 
-	pandoc -s ch1.txt ch2.txt refs.txt > book.html
+    pandoc -s ch1.txt ch2.txt refs.txt > book.html
 
 (The `-s` option here tells `pandoc` to produce a standalone HTML file,
 with a proper header, rather than a fragment.  For more details on this
 and many other command-line options, see below.)
+
+Instead of a filename, you can specify an absolute URI. In this
+case pandoc will attempt to download the content via HTTP:
+
+    pandoc -f html -t markdown http://www.fsf.org
 
 The format of the input and output can be specified explicitly using
 command-line options.  The input format can be specified using the
@@ -91,10 +96,7 @@ Supported input formats include `markdown`, `html`, `latex`, and `rst`.
 Note that the `rst` reader only parses a subset of reStructuredText
 syntax. For example, it doesn't handle tables, option lists, or
 footnotes. But for simple documents it should be adequate. The `latex`
-and `html` readers are also limited in what they can do. Because the
-`html` reader is picky about the HTML it parses, it is recommended that
-you pipe HTML through [HTML Tidy] before sending it to `pandoc`, or use
-the `html2markdown` script described below.
+and `html` readers are also limited in what they can do.
 
 If you don't specify a reader or writer explicitly, `pandoc` will
 try to determine the input and output format from the extensions of
@@ -113,7 +115,9 @@ Character encodings
 -------------------
 
 All input is assumed to be in the UTF-8 encoding, and all output
-is in UTF-8. If your local character encoding is not UTF-8 and you use
+is in UTF-8 (unless your version of pandoc was compiled using
+GHC 6.12 or higher, in which case the local encoding will be used).
+If your local character encoding is not UTF-8 and you use
 accented or foreign characters, you should pipe the input and output
 through [`iconv`]. For example,
 
@@ -123,91 +127,49 @@ will convert `source.txt` from the local encoding to UTF-8, then
 convert it to HTML, then convert back to the local encoding,
 putting the output in `output.html`.
 
-The shell scripts (described below) automatically convert the input 
-from the local encoding to UTF-8 before running them through `pandoc`,
-then convert the output back to the local encoding.
+Wrappers
+========
 
-Shell scripts
-=============
+`markdown2pdf`
+--------------
 
-Three shell scripts, `markdown2pdf`, `html2markdown`, and `hsmarkdown`,
-are included in the standard Pandoc installation. (They are not included
-in the Windows binary package, as they require a POSIX shell, but they
-may be used in Windows under Cygwin.)
+The standard Pandoc installation includes `markdown2pdf`, a wrapper
+around `pandoc` and `pdflatex` that produces PDFs directly from markdown
+sources. The default behavior of `markdown2pdf` is to create a file with
+the same base name as the first argument and the extension `pdf`; thus,
+for example,
 
-1.  `markdown2pdf` produces a PDF file from markdown-formatted
-    text, using `pandoc` and `pdflatex`.  The default
-    behavior of `markdown2pdf` is to create a file with the same
-    base name as the first argument and the extension `pdf`; thus,
-    for example,
+   markdown2pdf sample.txt endnotes.txt
 
-           markdown2pdf sample.txt endnotes.txt
+will produce `sample.pdf`.  (If `sample.pdf` exists already,
+it will be backed up before being overwritten.)  An output file
+name can be specified explicitly using the `-o` option:
 
-    will produce `sample.pdf`.  (If `sample.pdf` exists already,
-    it will be backed up before being overwritten.)  An output file
-    name can be specified explicitly using the `-o` option:
+   markdown2pdf -o book.pdf chap1 chap2
 
-           markdown2pdf -o book.pdf chap1 chap2
+If no input file is specified, input will be taken from stdin.
+All of `pandoc`'s options will work with `markdown2pdf` as well.
 
-    If no input file is specified, input will be taken from stdin.
-    All of `pandoc`'s options will work with `markdown2pdf` as well.
+`markdown2pdf` assumes that `pdflatex` is in the path.  It also
+assumes that the following LaTeX packages are available:
+`unicode`, `fancyhdr` (if you have verbatim text in footnotes),
+`graphicx` (if you use images), `array` (if you use tables),
+and `ulem` (if you use strikeout text).  If they are not already
+included in your LaTeX distribution, you can get them from
+[CTAN]. A full [TeX Live] or [MacTeX] distribution will have all of
+these packages.
 
-    `markdown2pdf` assumes that `pdflatex` is in the path.  It also
-    assumes that the following LaTeX packages are available:
-    `unicode`, `fancyhdr` (if you have verbatim text in footnotes),
-    `graphicx` (if you use images), `array` (if you use tables),
-    and `ulem` (if you use strikeout text).  If they are not already
-    included in your LaTeX distribution, you can get them from
-    [CTAN]. A full [TeX Live] or [MacTeX] distribution will have all of
-    these packages.
+`hsmarkdown`
+------------
 
-2.  `html2markdown` grabs a web page from a file or URL and converts
-    it to markdown-formatted text, using `tidy` and `pandoc`.
-
-    All of `pandoc`'s options will work with `html2markdown` as well.
-    In addition, the following special options may be used.
-    The special options must be separated from the `html2markdown`
-    command and any regular Pandoc options by the delimiter `--`:
-
-        html2markdown -o out.txt -- -e latin1 -g curl google.com 
-
-    The `-e` or `--encoding` option specifies the character encoding
-    of the HTML input.  If this option is not specified, and input
-    is not from stdin, `html2markdown` will attempt to determine the
-    page's character encoding from the "Content-type" meta tag.
-    If this is not present, UTF-8 is assumed.
-
-    The `-g` or `--grabber` option specifies the command to be used to
-    fetch the contents of a URL:
-
-        html2markdown -g 'curl --user foo:bar' www.mysite.com
-
-    If this option is not specified, `html2markdown` searches for an
-    available program (`wget`, `curl`, or a text-mode browser) to fetch
-    the contents of a URL.
-
-    `html2markdown` requires [HTML Tidy], which must be in the path.
-    It uses [`iconv`] for character encoding conversions; if `iconv`
-    is absent, it will still work, but it will treat everything as UTF-8.
-
-3.  `hsmarkdown` is designed to be used as a drop-in replacement for
-    `Markdown.pl`.  It forces `pandoc` to convert from markdown to
-    HTML, and to use the `--strict` flag for maximal compliance with
-    official markdown syntax.  (All of Pandoc's syntax extensions and
-    variants, described below, are disabled.)  No other command-line
-    options are allowed.  (In fact, options will be interpreted as
-    filenames.)
-
-    As an alternative to using the `hsmarkdown` shell script, the
-    user may create a symbolic link to `pandoc` called `hsmarkdown`.
-    When invoked under the name `hsmarkdown`, `pandoc` will behave
-    as if the `--strict` flag had been selected, and no command-line
-    options will be recognized.  However, this approach does not work
-    under Cygwin, due to problems with its simulation of symbolic
-    links.
+A user who wants a drop-in replacement for `Markdown.pl` may create
+a symbolic link to the `pandoc` executable called `hsmarkdown`. When
+invoked under the name `hsmarkdown`, `pandoc` will behave as if the
+`--strict` flag had been selected, and no command-line options will be
+recognized. However, this approach does not work under Cygwin, due to
+problems with its simulation of symbolic links.
 
 [Cygwin]:  http://www.cygwin.com/ 
-[HTML Tidy]:  http://tidy.sourceforge.net/
 [`iconv`]: http://www.gnu.org/software/libiconv/
 [CTAN]: http://www.ctan.org "Comprehensive TeX Archive Network"
 [TeX Live]: http://www.tug.org/texlive/
@@ -272,15 +234,28 @@ For further documentation, see the `pandoc(1)` man page.
     LaTeX *commands*, even if `-R` is not specified.)
 
 `-C` or `--custom-header` *filename*
-:   can be used to specify a custom document header. To see the headers
-    used by default, use the `-D` option: for example, `pandoc -D html`
-    prints the default HTML header.  Implies `--standalone`.
+:   can be used to specify a custom document header. Implies `--standalone`.
+    *Note: this option is deprecated. Use of `--template` is preferred.*
 
 `--toc` or `--table-of-contents`
 :   includes an automatically generated table of contents (or, in the
     case of `latex`, `context`, and `rst`, an instruction to create
     one) in the output document. This option has no effect with `man`,
     `docbook`, or `s5` output formats.
+
+`--template=`*file*
+:   uses *file* as a custom template for the generated document. Implies
+    `-s`. See [Templates](#templates) below for a description
+    of template syntax. If this option is not used, a default
+    template appropriate for the output format will be used. See also
+    `-D/--print-default-template`.
+
+`-V` *key=val*, `--variable=`*key:val*
+:   sets the template variable *key* to the value *val* when rendering the
+    document in standalone mode. This is only useful when the
+    `--template` option is used to specify a custom template, since
+    pandoc automatically sets the variables used in the default
+    templates.
 
 `-c` or `--css` *filename*
 :   allows the user to specify a custom stylesheet that will be linked to
@@ -309,6 +284,20 @@ For further documentation, see the `pandoc(1)` man page.
     `\end{document}` command in LaTeX). This option can be be used
     repeatedly to include multiple files. They will be included in the
     order specified.
+
+`--reference-odt` *filename*
+:   uses the specified file as a style reference in producing an ODT.
+    For best results, the reference ODT should be a modified version
+    of an ODT produced using pandoc.  The contents of the reference ODT
+    are ignored, but its stylesheets are used in the new ODT. If no
+    reference ODT is specified on the command line, pandoc will look
+    for a file `reference.odt` in the user data directory (see
+    `--data-dir`, below). If it is not found there, sensible defaults
+    will be used.
+
+`-D` or `--print-default-template` *format*
+:   prints the default template for an output *format*. (See `-t`
+    for a list of possible *format*s.)
 
 `-T` or `--title-prefix` *string*
 :   includes *string* as a prefix at the beginning of the title that
@@ -362,9 +351,12 @@ For further documentation, see the `pandoc(1)` man page.
     default (one item at a time). The normal default is for lists to be
     displayed all at once.
 
+`--xetex`
+:   creates LaTeX outut suitable for processing by XeTeX.
+
 `-N` or `--number-sections`
-:   causes sections to be numbered in LaTeX or ConTeXt output. By default,
-    sections are not numbered.
+:   causes sections to be numbered in LaTeX, ConTeXt, or HTML output.
+    By default, sections are not numbered.
 
 `--no-wrap`
 :   disables text-wrapping in output.  By default, text is wrapped
@@ -383,6 +375,30 @@ For further documentation, see the `pandoc(1)` man page.
     letters as decimal or hexadecimal character references.  If `--strict`
     is specified, *references* is used regardless of the presence
     of this option.
+
+`--id-prefix`*=string*
+:   specifies a prefix to be added to all automatically generated identifiers
+    in HTML output.  This is useful for preventing duplicate identifiers
+    when generating fragments to be included in other pages.
+
+`--indented-code-classes`*=classes*
+:   specifies classes to use for indented code blocks--for example,
+    `perl,numberLines` or `haskell`. Multiple classes may be separated
+    by spaces or commas.
+
+`--data-dir`*=directory*
+:   specifies the user data directory to search for pandoc data files.
+    If this option is not specified, the default user data directory
+    will be used:
+
+        $HOME/.pandoc
+
+    in unix and
+
+        C:\Documents And Settings\USERNAME\Application Data\pandoc
+
+    in Windows. A reference ODT, `templates` directory, `s5` directory
+    placed in this directory will override pandoc's normal defaults.
 
 `--dump-args`
 :   is intended to make it easier to create wrapper scripts that use
@@ -423,14 +439,87 @@ For further documentation, see the `pandoc(1)` man page.
 [gladTeX]:  http://www.math.uio.no/~martingu/gladtex/index.html
 [mimeTeX]: http://www.forkosh.com/mimetex.html 
 
+Templates
+=========
+
+When the `-s/--standalone` option is used, pandoc uses a template to
+add header and footer material that is needed for a self-standing
+document.  To see the default template that is used, just type
+
+    pandoc -D FORMAT
+
+where `FORMAT` is the name of the output format. A custom template
+can be specified using the `--template` option.  You can also override
+the system default templates for a given output format `FORMAT`
+by putting a file `templates/FORMAT.template` in the user data
+directory (see `--data-dir`, above).
+
+Templates may contain *variables*.  Variable names are sequences of
+alphanumerics, `-`, and `_`, starting with a letter.  A variable name
+surrounded by `$` signs will be replaced by its value.  For example,
+the string `$title$` in
+
+    <title>$title$</title>
+
+will be replaced by the document title.
+
+To write a literal `$` in a template, use `$$`.
+
+Some variables are set automatically by pandoc.  These vary somewhat
+depending on the output format, but include:
+
+`legacy-header`
+:   contents specified by `-C/--custom-header`
+`header-includes`
+:   contents specified by `-H/--include-in-header` (may have multiple
+    values)
+`toc`
+:   non-null value if `--toc/--table-of-contents` was specified
+`body`
+:   body of document
+`title`
+:   title of document, as specified in title block
+`author`
+:   author of document, as specified in title block (may have
+    multiple values)
+`date`
+:   date of document, as specified in title block
+
+Variables may be set at the command line using the `-V/--variable`
+option. This allows users to include custom variables in their
+templates.
+
+Templates may contain conditionals.  The syntax is as follows:
+
+    $if(variable)$
+    X
+    $else$
+    Y
+    $endif$
+
+This will include `X` in the template if `variable` has a non-null
+value; otherwise it will include `Y`. `X` and `Y` are placeholders for
+any valid template text, and may include interpolated variables or other
+conditionals. The `$else$` section may be omitted.
+
+When variables can have multiple values (for example, `author` in
+a multi-author document), you can use the `$for$` keyword:
+
+    $for(author)$
+    <meta name="author" content="$author$" />
+    $endfor$
+
+You can optionally specify a separator to be used between
+consecutive items:
+
+    $for(author)$$author$$sep$, $endfor$
+
 Pandoc's markdown vs. standard markdown
 =======================================
 
 In parsing markdown, Pandoc departs from and extends [standard markdown]
-in a few respects.  (To run Pandoc on the official markdown test suite,
-type `make test-markdown`.)  Except where noted, these differences can
-be suppressed by specifying the `--strict` command-line option or by
-using the `hsmarkdown` wrapper.
+in a few respects.  Except where noted, these differences can
+be suppressed by specifying the `--strict` command-line option.
 
 [standard markdown]:  http://daringfireball.net/projects/markdown/syntax
   "Markdown syntax description"
@@ -458,7 +547,14 @@ which allows only the following characters to be backslash-escaped:
     \`*_{}[]()>#+-.!
 
 A backslash-escaped space is parsed as a nonbreaking space.  It will
-appear in TeX output as '~' and in HTML and XML as '\&#160;' or '\&nbsp;'.
+appear in TeX output as '`~`' and in HTML and XML as '`\&#160;`' or
+'`\&nbsp;`'.
+
+A backslash-escaped newline (i.e. a backslash occurring at the end of
+a line) is parsed as a hard line break.  It will appear in TeX output as
+'`\\`' and in HTML as '`<br />`'.  This is a nice alternative to
+markdown's "invisible" way of indicating hard line breaks using
+two trailing spaces on a line.
 
 Subscripts and superscripts
 ---------------------------
@@ -566,41 +662,42 @@ Definition lists
 ----------------
 
 Pandoc supports definition lists, using a syntax inspired by
-[PHP Markdown Extra] and [reStructuredText]:
-
-  [PHP Markdown Extra]: http://www.michelf.com/projects/php-markdown/extra/
+[PHP Markdown Extra] and [reStructuredText]:[^3]
 
     Term 1
+
     :   Definition 1
 
-    Term 2
+    Term 2 with *inline markup*
+
     :   Definition 2
 
-    :   Second paragraph of definition 2.
+            { some code, part of Definition 2 }
 
-Each term must fit on one line. The definition must begin on the line
-after the term. The definition consists of one or more block elements
-(paragraph, code block, list, etc.), each beginning with a colon and
-(aside from the colon) indented one tab stop.
+        Third paragraph of definition 2.
 
-    Term *with inline markup*
-    :   Here is the definition.  It may contain multiple blocks.
-        Here is some code:
+Each term must fit on one line, which may optionally be followed by
+a blank line, and must be followed by one or more definitions.
+A definition begins with a colon or tilde, which may be indented one
+or two spaces. A term may have multiple definitions, and each definition
+may consist of one or more block elements (paragraph, code block, list,
+etc.), each indented four spaces or one tab stop.
 
-    :       {* my code *} 
-
-    :   Here is the third paragraph of this definition.
-
-If you leave space after the definition (as in the first example above),
-the definitions will be considered paragraphs. In some output formats,
-this will mean greater spacing between term/definition pairs. For a
-compact definition list, do not leave space between the definition and
-the next term:
+If you leave space after the definition (as in the example above),
+the blocks of the definitions will be considered paragraphs. In some
+output formats, this will mean greater spacing between term/definition
+pairs. For a compact definition list, do not leave space between the
+definition and the next term:
 
     Term 1
-    :   Definition 1
+      ~ Definition 1
     Term 2
-    :   Definition 2
+      ~ Definition 2a
+      ~ Definition 2b
+
+[^3]:  I have also been influenced by the suggestions of [David Wheeler](http://www.justatheory.com/computers/markup/modest-markdown-proposal.html).
+
+[PHP Markdown Extra]: http://www.michelf.com/projects/php-markdown/extra/
 
 Reference links
 ---------------
@@ -664,17 +761,17 @@ a fixed-width font, such as Courier.
 
 Simple tables look like this:
 
-      Right     Left     Center     Default   
-    -------     ------ ----------   -------   
-         12     12        12            12    
-        123     123       123          123    
-          1     1          1             1    
+      Right     Left     Center     Default
+    -------     ------ ----------   -------
+         12     12        12            12
+        123     123       123          123
+          1     1          1             1
 
     Table:  Demonstration of simple table syntax.
 
 The headers and table rows must each fit on one line.  Column
 alignments are determined by the position of the header text relative
-to the dashed line below it:[^3]
+to the dashed line below it:[^4]
 
   - If the dashed line is flush with the header text on the right side
     but extends beyond it on the left, the column is right-aligned.
@@ -685,17 +782,26 @@ to the dashed line below it:[^3]
   - If the dashed line is flush with the header text on both sides,
     the default alignment is used (in most cases, this will be left).
 
-[^3]:  This scheme is due to Michel Fortin, who proposed it on the
+[^4]:  This scheme is due to Michel Fortin, who proposed it on the
        [Markdown discussion list](http://six.pairlist.net/pipermail/markdown-discuss/2005-March/001097.html).
 
-The table must end with a blank line.  Optionally, a caption may be
-provided (as illustrated in the example above).  A caption is a paragraph
-beginning with the string `Table:`, which will be stripped off.
+The table must end with a blank line, or a line of dashes followed by
+a blank line. A caption may optionally be provided (as illustrated in
+the example above). A caption is a paragraph beginning with the string
+`Table:`, which will be stripped off.
 
-The table parser pays attention to the widths of the columns, and
-the writers try to reproduce these relative widths in the output.
-So, if you find that one of the columns is too narrow in the output,
-try widening it in the markdown source.
+The column headers may be omitted, provided a dashed line is used
+to end the table. For example:
+
+    -------     ------ ----------   -------
+         12     12        12             12
+        123     123       123           123
+          1     1          1              1
+    -------     ------ ----------   -------
+
+When headers are omitted, column alignments are determined on the basis
+of the first line of the table body. So, in the tables above, the columns
+would be right, left, center, and right aligned, respectively.
 
 Multiline tables allow headers and table rows to span multiple lines
 of text.  Here is an example:
@@ -706,20 +812,43 @@ of text.  Here is an example:
     ----------- ------- --------------- -------------------------
        First    row                12.0 Example of a row that
                                         spans multiple lines.
-    
+
       Second    row                 5.0 Here's another one. Note
                                         the blank line between
                                         rows.
     -------------------------------------------------------------
-    
+
     Table: Here's the caption. It, too, may span
     multiple lines.
 
 These work like simple tables, but with the following differences:
 
-  - They must begin with a row of dashes, before the header text.
+  - They must begin with a row of dashes, before the header text
+    (unless the headers are omitted).
   - They must end with a row of dashes, then a blank line.
-  - The rows must be separated by blank lines. 
+  - The rows must be separated by blank lines.
+
+In multiline tables, the table parser pays attention to the widths of
+the columns, and the writers try to reproduce these relative widths in
+the output. So, if you find that one of the columns is too narrow in the
+output, try widening it in the markdown source.
+
+Headers may be omitted in multiline tables as well as simple tables:
+
+    ----------- ------- --------------- -------------------------
+       First    row                12.0 Example of a row that
+                                        spans multiple lines.
+
+      Second    row                 5.0 Here's another one. Note
+                                        the blank line between
+                                        rows.
+    -------------------------------------------------------------
+
+    Table: Here's a multiline table without headers.
+
+It is possible for a multiline table to have just one row, but the row
+should be followed by a blank line (and then the row of dashes that ends
+the table), or the table may be interpreted as a simple table.
 
 Delimited Code blocks
 ---------------------
@@ -777,7 +906,7 @@ Title blocks
 If the file begins with a title block
 
 	% title
-	% author(s) (separated by commas)
+	% author(s) (separated by semicolons)
 	% date
 
 it will be parsed as bibliographic information, not regular text.  (It
@@ -865,8 +994,9 @@ identifier. This identifier is based on the text of the header. To
 derive the identifier from the header text,
 
   - Remove all formatting, links, etc.
-  - Remove all punctuation, except dashes and hyphens.
-  - Replace all spaces, dashes, newlines, and hyphens with hyphens.
+  - Remove all punctuation, except underscores, hyphens, periods,
+    and tildes.
+  - Replace all spaces and newlines with hyphens.
   - Convert all alphabetic characters to lowercase.
   - Remove everything up to the first letter (identifiers may
     not begin with a number or punctuation mark).
@@ -1001,22 +1131,6 @@ LaTeX, not as markdown.
 Inline LaTeX is ignored in output formats other than Markdown, LaTeX,
 and ConTeXt.
 
-Custom headers
-==============
-
-When run with the "standalone" option (`-s`), `pandoc` creates a
-standalone file, complete with an appropriate header.  To see the
-default headers used for html and latex, use the following commands:
-
-	pandoc -D html
-
-	pandoc -D latex 
-
-If you want to use a different header, just create a file containing
-it and specify it on the command line as follows:
-
-	pandoc --custom-header=MyHeaderFile
-
 Producing S5 with Pandoc
 ========================
 
@@ -1072,8 +1186,15 @@ that they may be cached. The best approach in this case is to use pandoc
 without the `-s` option to produce the body of the S5 document, which
 can then be inserted into an HTML template that links to the javascript
 and CSS files required by S5. (See the instructions on the S5 website.)
-Alternatively, you may use `-s` together with the `-C/--custom-header`
-option.
+Alternatively, you may use `-s` together with the `--template`
+option to specify a custom template.
+
+You can change the style of the slides by putting customized CSS files
+in `$DATADIR/s5/default`, where `$DATADIR` is the user data directory
+(see `--data-dir`, above). The originals may be found in pandoc's system
+data directory (generally `$CABALDIR/pandoc-VERSION/s5/default`). Pandoc
+will look there for any files it does not find in the user data
+directory.
 
 Literate Haskell support
 ========================

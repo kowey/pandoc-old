@@ -31,23 +31,31 @@ module Text.Pandoc.Writers.RTF ( writeRTF ) where
 import Text.Pandoc.Definition
 import Text.Pandoc.Shared
 import Text.Pandoc.Readers.TeXMath
+import Text.Pandoc.Templates (renderTemplate)
 import Data.List ( isSuffixOf, intercalate )
 import Data.Char ( ord, isDigit )
 
 -- | Convert Pandoc to a string in rich text format.
 writeRTF :: WriterOptions -> Pandoc -> String
-writeRTF options (Pandoc meta blocks) = 
-  let head' = if writerStandalone options
-                 then rtfHeader (writerHeader options) meta 
-                 else ""
-      toc  = if writerTableOfContents options
-                then tableOfContents $ filter isHeaderBlock blocks
-                else "" 
-      foot = if writerStandalone options then "\n}\n" else "" 
+writeRTF options (Pandoc (Meta title authors date) blocks) = 
+  let titletext = inlineListToRTF title
+      authorstext = map inlineListToRTF authors
+      datetext = inlineListToRTF date
+      spacer = not $ all null $ titletext : datetext : authorstext
       body = writerIncludeBefore options ++ 
              concatMap (blockToRTF 0 AlignDefault) blocks ++ 
              writerIncludeAfter options
-  in  head' ++ toc ++ body ++ foot
+      context = writerVariables options ++
+                [ ("body", body)
+                , ("title", titletext)
+                , ("date", datetext) ] ++
+                [ ("author", a) | a <- authorstext ] ++
+                [ ("spacer", "yes") | spacer ] ++
+                [ ("toc", tableOfContents $ filter isHeaderBlock blocks) |
+                   writerTableOfContents options ]
+  in  if writerStandalone options
+         then renderTemplate context $ writerTemplate options
+         else body
 
 -- | Construct table of contents from list of header blocks.
 tableOfContents :: [Block] -> String 
@@ -59,7 +67,7 @@ tableOfContents headers =
 
 elementToListItem :: Element -> [Block]
 elementToListItem (Blk _) = []
-elementToListItem (Sec _ _ sectext subsecs) = [Plain sectext] ++
+elementToListItem (Sec _ _ _ sectext subsecs) = [Plain sectext] ++
   if null subsecs
      then []
      else [BulletList (map elementToListItem subsecs)]
@@ -139,27 +147,6 @@ orderedMarkers indent (start, style, delim) =
               _ -> orderedListMarkers (start, LowerAlpha, Period)
      else orderedListMarkers (start, style, delim)
 
--- | Returns RTF header.
-rtfHeader :: String    -- ^ header text
-          -> Meta      -- ^ bibliographic information
-          -> String
-rtfHeader headerText (Meta title authors date) =
-  let titletext = if null title
-                     then "" 
-                     else rtfPar 0 0 AlignCenter $
-                          "\\b \\fs36 " ++ inlineListToRTF title
-      authorstext = if null authors
-                       then "" 
-                       else rtfPar 0 0 AlignCenter (" " ++ (intercalate "\\" $
-                                                    map stringToRTF authors))
-      datetext = if date == "" 
-                    then ""
-                    else rtfPar 0 0 AlignCenter (" " ++ stringToRTF date) in
-  let spacer = if null (titletext ++ authorstext ++ datetext)
-                  then ""
-                  else rtfPar 0 0 AlignDefault "" in
-  headerText ++ titletext ++ authorstext ++ datetext ++ spacer
-
 -- | Convert Pandoc block element to RTF.
 blockToRTF :: Int       -- ^ indent level
            -> Alignment -- ^ alignment
@@ -191,9 +178,12 @@ blockToRTF indent alignment (Table caption aligns sizes headers rows) =
   rtfPar indent 0 alignment (inlineListToRTF caption)
 
 tableRowToRTF :: Bool -> Int -> [Alignment] -> [Double] -> [[Block]] -> String
-tableRowToRTF header indent aligns sizes cols =
-  let columns = concat $ zipWith (tableItemToRTF indent) aligns cols
-      totalTwips = 6 * 1440 -- 6 inches
+tableRowToRTF header indent aligns sizes' cols =
+  let totalTwips = 6 * 1440 -- 6 inches
+      sizes = if all (== 0) sizes'
+                 then take (length cols) $ repeat (1.0 / fromIntegral (length cols))
+                 else sizes'
+      columns = concat $ zipWith (tableItemToRTF indent) aligns cols
       rightEdges = tail $ scanl (\sofar new -> sofar + floor (new * totalTwips))
                                 (0 :: Integer) sizes
       cellDefs = map (\edge -> (if header
@@ -244,11 +234,12 @@ listItemToRTF alignment indent marker list =
 -- | Convert definition list item (label, list of blocks) to RTF.
 definitionListItemToRTF :: Alignment          -- ^ alignment
                         -> Int                -- ^ indent level
-                        -> ([Inline],[Block]) -- ^ list item (list of blocks)
+                        -> ([Inline],[[Block]]) -- ^ list item (list of blocks)
                         -> [Char]
-definitionListItemToRTF alignment indent (label, items) =
+definitionListItemToRTF alignment indent (label, defs) =
   let labelText = blockToRTF indent alignment (Plain label)
-      itemsText = concatMap (blockToRTF (indent + listIncrement) alignment) items
+      itemsText = concatMap (blockToRTF (indent + listIncrement) alignment) $
+                    concat defs
   in  labelText ++ itemsText 
 
 -- | Convert list of inline items to RTF.

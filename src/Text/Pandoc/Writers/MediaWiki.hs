@@ -32,8 +32,9 @@ MediaWiki:  <http://www.mediawiki.org/wiki/MediaWiki>
 module Text.Pandoc.Writers.MediaWiki ( writeMediaWiki ) where
 import Text.Pandoc.Definition
 import Text.Pandoc.Shared 
+import Text.Pandoc.Templates (renderTemplate)
 import Text.Pandoc.XML ( escapeStringForXML )
-import Data.List ( intersect )
+import Data.List ( intersect, intercalate )
 import Network.URI ( isURI )
 import Control.Monad.State
 
@@ -54,18 +55,18 @@ pandocToMediaWiki :: WriterOptions -> Pandoc -> State WriterState String
 pandocToMediaWiki opts (Pandoc _ blocks) = do
   let before  = writerIncludeBefore opts
   let after   = writerIncludeAfter opts
-  let head' = if writerStandalone opts
-                then writerHeader opts
-                else ""
-  let toc = if writerTableOfContents opts 
-               then "__TOC__\n"
-               else ""
   body <- blockListToMediaWiki opts blocks
   notesExist <- get >>= return . stNotes
   let notes = if notesExist
                  then "\n== Notes ==\n<references />"
                  else "" 
-  return $ head' ++ before ++ toc ++ body ++ after ++ notes
+  let main = before ++ body ++ after ++ notes
+  let context = writerVariables opts ++
+                [ ("body", main) ] ++
+                [ ("toc", "yes") | writerTableOfContents opts ]
+  if writerStandalone opts
+     then return $ renderTemplate context $ writerTemplate opts
+     else return main
 
 -- | Escape special characters for MediaWiki.
 escapeString :: String -> String
@@ -141,7 +142,7 @@ blockToMediaWiki opts x@(BulletList items) = do
         modify $ \s -> s { stListLevel = stListLevel s ++ "*" }
         contents <- mapM (listItemToMediaWiki opts) items
         modify $ \s -> s { stListLevel = init (stListLevel s) }
-        return $ vcat contents
+        return $ vcat contents ++ "\n"
 
 blockToMediaWiki opts x@(OrderedList attribs items) = do
   oldUseTags <- get >>= return . stUseTags
@@ -156,7 +157,7 @@ blockToMediaWiki opts x@(OrderedList attribs items) = do
         modify $ \s -> s { stListLevel = stListLevel s ++ "#" }
         contents <- mapM (listItemToMediaWiki opts) items
         modify $ \s -> s { stListLevel = init (stListLevel s) }
-        return $ vcat contents
+        return $ vcat contents ++ "\n"
 
 blockToMediaWiki opts x@(DefinitionList items) = do
   oldUseTags <- get >>= return . stUseTags
@@ -171,7 +172,7 @@ blockToMediaWiki opts x@(DefinitionList items) = do
         modify $ \s -> s { stListLevel = stListLevel s ++ ";" }
         contents <- mapM (definitionListItemToMediaWiki opts) items
         modify $ \s -> s { stListLevel = init (stListLevel s) }
-        return $ vcat contents
+        return $ vcat contents ++ "\n"
 
 -- Auxiliary functions for lists:
 
@@ -199,17 +200,19 @@ listItemToMediaWiki opts items = do
 
 -- | Convert definition list item (label, list of blocks) to MediaWiki.
 definitionListItemToMediaWiki :: WriterOptions
-                             -> ([Inline],[Block]) 
+                             -> ([Inline],[[Block]]) 
                              -> State WriterState String
 definitionListItemToMediaWiki opts (label, items) = do
   labelText <- inlineListToMediaWiki opts label
-  contents <- blockListToMediaWiki opts items
+  contents <- mapM (blockListToMediaWiki opts) items
   useTags <- get >>= return . stUseTags
   if useTags
-     then return $ "<dt>" ++ labelText ++ "</dt>\n<dd>" ++ contents ++ "</dd>"
+     then return $ "<dt>" ++ labelText ++ "</dt>\n" ++
+           (intercalate "\n" $ map (\d -> "<dd>" ++ d ++ "</dd>") contents)
      else do
        marker <- get >>= return . stListLevel
-       return $ marker ++ " " ++ labelText ++ "\n" ++ (init marker ++ ": ") ++  contents
+       return $ marker ++ " " ++ labelText ++ "\n" ++
+           (intercalate "\n" $ map (\d -> init marker ++ ": " ++ d) contents)
 
 -- | True if the list can be handled by simple wiki markup, False if HTML tags will be needed.
 isSimpleList :: Block -> Bool
@@ -218,7 +221,7 @@ isSimpleList x =
        BulletList items                 -> all isSimpleListItem items
        OrderedList (num, sty, _) items  -> all isSimpleListItem items &&
                                             num == 1 && sty `elem` [DefaultStyle, Decimal]
-       DefinitionList items             -> all isSimpleListItem $ map snd items 
+       DefinitionList items             -> all isSimpleListItem $ concatMap snd items 
        _                                -> False
 
 -- | True if list item can be handled with the simple wiki syntax.  False if
@@ -251,9 +254,7 @@ tr x =  "<tr>\n" ++ x ++ "\n</tr>"
 
 -- | Concatenates strings with line breaks between them.
 vcat :: [String] -> String
-vcat []     = ""
-vcat [x]    = x
-vcat (x:xs) = x ++ "\n" ++ vcat xs
+vcat = intercalate "\n"
 
 -- Auxiliary functions for tables:
 

@@ -67,10 +67,9 @@ after={\blank[medium]},
 ]
 
 \protect
-	
 
 \doctitle{Pandoc Test Suite}
-\author{John MacFarlane \& Anonymous}
+\author{John MacFarlane\\Anonymous}
 \date{July 17, 2006}
 \starttext
 \maketitle
@@ -514,6 +513,53 @@ orange block quote
 \stopblockquote
 \stopdescr
 
+Multiple definitions, tight:
+
+\startdescr{apple}
+red fruit
+
+computer
+\stopdescr
+
+\startdescr{orange}
+orange fruit
+
+bank
+\stopdescr
+
+Multiple definitions, loose:
+
+\startdescr{apple}
+red fruit
+
+computer
+\stopdescr
+
+\startdescr{orange}
+orange fruit
+
+bank
+\stopdescr
+
+Blank line after term, indented marker, alternate markers:
+
+\startdescr{apple}
+red fruit
+
+computer
+\stopdescr
+
+\startdescr{orange}
+orange fruit
+
+\startitemize[n][stopper=.]
+\item
+  sublist
+\item
+  sublist
+\stopitemize
+\stopdescr
+
 \subject{HTML Blocks}
 
 Simple block on one line:
@@ -880,5 +926,6 @@ Notes can go in quotes.
 
 This paragraph should not be part of the note, as it is not
 indented.
+
 \stoptext
 

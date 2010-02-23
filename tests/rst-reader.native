@@ -1,8 +1,8 @@
-Pandoc (Meta [Str "Pandoc",Space,Str "Test",Space,Str "Suite",Str ":",Space,Str "Subtitle"] ["John MacFarlane","Anonymous"] "July 17, 2006")
+Pandoc (Meta [Str "Pandoc",Space,Str "Test",Space,Str "Suite",Str ":",Space,Str "Subtitle"] [[Str "John",Space,Str "MacFarlane"],[Str "Anonymous"]] [Str "July",Space,Str "17,",Space,Str "2006"])
 [ DefinitionList
-  [  ([Str "Revision"],
-     [ Plain [Str "3"] ]
-    ) ]
+  [ ([Str "Revision"],
+     [ [ Plain [Str "3"] ]
+     ]) ]
 , Header 1 [Str "Level",Space,Str "one",Space,Str "header"]
 , Para [Str "This",Space,Str "is",Space,Str "a",Space,Str "set",Space,Str "of",Space,Str "tests",Space,Str "for",Space,Str "pandoc.",Space,Str "Most",Space,Str "of",Space,Str "them",Space,Str "are",Space,Str "adapted",Space,Str "from",Space,Str "John",Space,Str "Gruber's",Space,Str "markdown",Space,Str "test",Space,Str "suite."]
 , Header 2 [Str "Level",Space,Str "two",Space,Str "header"]
@@ -43,6 +43,8 @@ Pandoc (Meta [Str "Pandoc",Space,Str "Test",Space,Str "Suite",Str ":",Space,Str 
 , CodeBlock ("",[],[]) "this code block is indented by one tab"
 , Para [Str "And",Str ":"]
 , CodeBlock ("",[],[]) "this block is indented by two tabs\n\nThese should not be escaped:  \\$ \\\\ \\> \\[ \\{"
+, Para [Str "And",Str ":"]
+, CodeBlock ("",["sourceCode","python"],[]) "def my_function(x):\n    return x + 1"
 , Header 1 [Str "Lists"]
 , Header 2 [Str "Unordered"]
 , Para [Str "Asterisks",Space,Str "tight",Str ":"]
@@ -152,36 +154,36 @@ Pandoc (Meta [Str "Pandoc",Space,Str "Test",Space,Str "Suite",Str ":",Space,Str 
   , [ Plain [Str "item",Space,Str "2"] ] ]
 , Header 2 [Str "Definition"]
 , DefinitionList
-  [  ([Str "term",Space,Str "1"],
-     [ Para [Str "Definition",Space,Str "1."] ]
-    ),
-    ([Str "term",Space,Str "2"],
-     [ Para [Str "Definition",Space,Str "2,",Space,Str "paragraph",Space,Str "1."]
-     , Para [Str "Definition",Space,Str "2,",Space,Str "paragraph",Space,Str "2."] ]  ),
-    ([Str "term",Space,Str "with",Space,Emph [Str "emphasis"]],
-     [ Para [Str "Definition",Space,Str "3."] ]
-    ) ]
+  [ ([Str "term",Space,Str "1"],
+     [ [ Para [Str "Definition",Space,Str "1."] ]
+     ])
+  , ([Str "term",Space,Str "2"],
+     [ [ Para [Str "Definition",Space,Str "2,",Space,Str "paragraph",Space,Str "1."]
+       , Para [Str "Definition",Space,Str "2,",Space,Str "paragraph",Space,Str "2."] ]])
+  , ([Str "term",Space,Str "with",Space,Emph [Str "emphasis"]],
+     [ [ Para [Str "Definition",Space,Str "3."] ]
+     ]) ]
 , Header 1 [Str "Field",Space,Str "Lists"]
 , DefinitionList
-  [  ([Str "address"],
-     [ Plain [Str "61",Space,Str "Main",Space,Str "St."] ]
-    ),
-    ([Str "city"],
-     [ Plain [Emph [Str "Nowhere"],Str ",",Space,Str "MA,",Space,Str "USA"] ]
-    ),
-    ([Str "phone"],
-     [ Plain [Str "123",Str "-",Str "4567"] ]
-    ) ]
+  [ ([Str "address"],
+     [ [ Plain [Str "61",Space,Str "Main",Space,Str "St."] ]
+     ])
+  , ([Str "city"],
+     [ [ Plain [Emph [Str "Nowhere"],Str ",",Space,Str "MA,",Space,Str "USA"] ]
+     ])
+  , ([Str "phone"],
+     [ [ Plain [Str "123",Str "-",Str "4567"] ]
+     ]) ]
 , DefinitionList
-  [  ([Str "address"],
-     [ Plain [Str "61",Space,Str "Main",Space,Str "St."] ]
-    ),
-    ([Str "city"],
-     [ Plain [Emph [Str "Nowhere"],Str ",",Space,Str "MA,",Space,Str "USA"] ]
-    ),
-    ([Str "phone"],
-     [ Plain [Str "123",Str "-",Str "4567"] ]
-    ) ]
+  [ ([Str "address"],
+     [ [ Plain [Str "61",Space,Str "Main",Space,Str "St."] ]
+     ])
+  , ([Str "city"],
+     [ [ Plain [Emph [Str "Nowhere"],Str ",",Space,Str "MA,",Space,Str "USA"] ]
+     ])
+  , ([Str "phone"],
+     [ [ Plain [Str "123",Str "-",Str "4567"] ]
+     ]) ]
 , Header 1 [Str "HTML",Space,Str "Blocks"]
 , Para [Str "Simple",Space,Str "block",Space,Str "on",Space,Str "one",Space,Str "line",Str ":"]
 , RawHtml "<div>foo</div>\n"
@@ -241,5 +243,49 @@ Pandoc (Meta [Str "Pandoc",Space,Str "Test",Space,Str "Suite",Str ":",Space,Str 
 , Para [Str "A",Space,Str "third",Space,Str "paragraph"]
 , Header 1 [Str "Line",Space,Str "blocks"]
 , Para [Str "But",Space,Str "can",Space,Str "a",Space,Str "bee",Space,Str "be",Space,Str "said",Space,Str "to",Space,Str "be",LineBreak,Str "    ",Str "or",Space,Str "not",Space,Str "to",Space,Str "be",Space,Str "an",Space,Str "entire",Space,Str "bee,",LineBreak,Str "        ",Str "when",Space,Str "half",Space,Str "the",Space,Str "bee",Space,Str "is",Space,Str "not",Space,Str "a",Space,Str "bee,",LineBreak,Str "            ",Str "due",Space,Str "to",Space,Str "some",Space,Str "ancient",Space,Str "injury?"]
-, Para [Str "Continuation",Space,Str "line",LineBreak,Str "  ",Str "and",Space,Str "another"] ]
+, Para [Str "Continuation",Space,Str "line",LineBreak,Str "  ",Str "and",Space,Str "another"]
+, Header 1 [Str "Simple",Space,Str "Tables"]
+, Table [] [AlignDefault,AlignDefault,AlignDefault] [0.0,0.0,0.0]
+  [ [ Plain [Str "col",Space,Str "1"] ]
+  , [ Plain [Str "col",Space,Str "2"] ]
+  , [ Plain [Str "col",Space,Str "3"] ] ] [
+  [ [ Plain [Str "r1",Space,Str "a"] ]
+  , [ Plain [Str "b"] ]
+  , [ Plain [Str "c"] ] ],
+  [ [ Plain [Str "r2",Space,Str "d"] ]
+  , [ Plain [Str "e"] ]
+  , [ Plain [Str "f"] ] ] ]
+, Para [Str "Headless"]
+, Table [] [AlignDefault,AlignDefault,AlignDefault] [0.0,0.0,0.0]
+  [   []
+  ,   []
+  ,   [] ] [
+  [ [ Plain [Str "r1",Space,Str "a"] ]
+  , [ Plain [Str "b"] ]
+  , [ Plain [Str "c"] ] ],
+  [ [ Plain [Str "r2",Space,Str "d"] ]
+  , [ Plain [Str "e"] ]
+  , [ Plain [Str "f"] ] ] ]
+, Header 1 [Str "Grid",Space,Str "Tables"]
+, Table [] [AlignDefault,AlignDefault,AlignDefault] [0.2375,0.15,0.1625]
+  [ [ Plain [Str "col",Space,Str "1"] ]
+  , [ Plain [Str "col",Space,Str "2"] ]
+  , [ Plain [Str "col",Space,Str "3"] ] ] [
+  [ [ Plain [Str "r1",Space,Str "a",Space,Str "r1",Space,Str "bis"] ]
+  , [ Plain [Str "b",Space,Str "b",Space,Str "2"] ]
+  , [ Plain [Str "c",Space,Str "c",Space,Str "2"] ] ],
+  [ [ Plain [Str "r2",Space,Str "d"] ]
+  , [ Plain [Str "e"] ]
+  , [ Plain [Str "f"] ] ] ]
+, Para [Str "Headless"]
+, Table [] [AlignDefault,AlignDefault,AlignDefault] [0.2375,0.15,0.1625]
+  [   []
+  ,   []
+  ,   [] ] [
+  [ [ Plain [Str "r1",Space,Str "a",Space,Str "r1",Space,Str "bis"] ]
+  , [ Plain [Str "b",Space,Str "b",Space,Str "2"] ]
+  , [ Plain [Str "c",Space,Str "c",Space,Str "2"] ] ],
+  [ [ Plain [Str "r2",Space,Str "d"] ]
+  , [ Plain [Str "e"] ]
+  , [ Plain [Str "f"] ] ] ] ]
 

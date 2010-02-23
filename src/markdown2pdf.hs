@@ -3,16 +3,24 @@ module Main where
 import Data.List (isInfixOf, intercalate, isPrefixOf)
 import Data.Maybe (isNothing)
 
-import Control.Monad (when, unless, guard)
+import Control.Monad (unless, guard)
 import Control.Exception (tryJust, bracket)
 
-import System.IO (stderr, hPutStrLn)
+import System.IO (stderr)
 import System.IO.Error (isDoesNotExistError)
+import System.Environment ( getArgs, getProgName )
+-- Note: ghc >= 6.12 (base >=4.2) supports unicode through iconv
+-- So we use System.IO.UTF8 only if we have an earlier version
+#if MIN_VERSION_base(4,2,0)
+import System.IO (hPutStrLn)
+#else
+import Prelude hiding ( putStr, putStrLn, writeFile, readFile, getContents )
+import System.IO.UTF8
+#endif
 import System.Exit (ExitCode (..), exitWith)
 import System.FilePath
 import System.Directory
 import System.Process (readProcessWithExitCode)
-import System.Environment (getArgs, getProgName)
 
 
 run :: FilePath -> [String] -> IO (Either String String)
@@ -26,7 +34,7 @@ run file opts = do
 parsePandocArgs :: [String] -> IO (Maybe ([String], String))
 parsePandocArgs args = do
   result <- run "pandoc" $ ["--dump-args"] ++ args
-  return $ either (const Nothing) (parse . map trim . lines) result
+  return $ either error (parse . map trim . lines) result
   where parse []         = Nothing
         parse ("-":[])   = Just ([], "stdin") -- no output or input
         parse ("-":x:xs) = Just (x:xs, dropExtension x) -- no output
@@ -35,17 +43,17 @@ parsePandocArgs args = do
         trim = takeWhile (/='\r') . dropWhile (=='\r')
 
 runPandoc :: [String] -> FilePath -> IO (Either String FilePath)
-runPandoc inputs output = do
+runPandoc inputsAndArgs output = do
   let texFile = replaceExtension output "tex"
   result <- run "pandoc" $
     ["-s", "--no-wrap", "-r", "markdown", "-w", "latex"]
-    ++ inputs ++ ["-o", texFile]
+    ++ inputsAndArgs ++ ["-o", texFile]
   return $ either Left (const $ Right texFile) result
 
-runLatexRaw :: FilePath -> IO (Either (Either String String) FilePath)
-runLatexRaw file = do
+runLatexRaw :: String -> FilePath -> IO (Either (Either String String) FilePath)
+runLatexRaw latexProgram file = do
   -- we ignore the ExitCode because pdflatex always fails the first time
-  run "pdflatex" ["-interaction=batchmode", "-output-directory",
+  run latexProgram ["-interaction=batchmode", "-output-directory",
     takeDirectory file, dropExtension file] >> return ()
   let pdfFile = replaceExtension file "pdf"
   let logFile = replaceExtension file "log"
@@ -59,15 +67,16 @@ runLatexRaw file = do
     (False, _    , True, msg) -> return $ Left $ Right msg  -- references
     (False, False, False, _ ) -> return $ Right pdfFile     -- success
 
-runLatex :: FilePath -> IO (Either String FilePath)
-runLatex file = step 3
+runLatex :: String -> FilePath -> IO (Either String FilePath)
+runLatex latexProgram file = step 3
   where
-  step 0 = return $ Left "Limit of attempts reached"
   step n = do
-    result <- runLatexRaw file
+    result <- runLatexRaw latexProgram file
     case result of
       Left (Left err) -> return $ Left err
-      Left (Right _ ) -> step (n-1 :: Int)
+      Left (Right _) | n > 1  -> step (n-1 :: Int)
+      Right _ | n > 2 -> step (n-1 :: Int)
+      Left (Right msg) -> return $ Left msg
       Right pdfFile   -> return $ Right pdfFile
 
 checkLatex :: String -> (Bool, Bool, Bool, String)
@@ -77,13 +86,13 @@ checkLatex txt = (err , bib, ref, unlines $! msgs ++ tips)
   xs `oneOf` x = any (flip isInfixOf x) xs
   msgs = filter (oneOf ["Error:", "Warning:"]) (lines txt)
   tips = checkPackages msgs
-  err = any (oneOf ["LaTeX Error:", "Latex Error:"]) msgs
+  err = any (oneOf ["!", "LaTeX Error:", "Latex Error:"]) msgs
   bib = any (oneOf ["Warning: Citation"
                    ,"Warning: There were undefined citations"]) msgs
   ref = any (oneOf ["Warning: Reference"
                    ,"Warning: Label"
                    ,"Warning: There were undefined references"
-                   ,"--toc", "--table-of-contents"]) msgs
+                   ]) msgs
 
 checkPackages :: [String] -> [String]
 checkPackages = concatMap chks
@@ -127,13 +136,8 @@ saveStdin file = do
 
 saveOutput :: FilePath -> FilePath -> IO ()
 saveOutput input output = do
-  outputExist <- doesFileExist output
-  when outputExist $ do
-    let output' = output ++ "~"
-    renameFile output output'
-    putStrLn $! "Created backup file " ++ output'
   copyFile input output
-  putStrLn $! "Created " ++ output
+  hPutStrLn stderr $! "Created " ++ output
 
 main :: IO ()
 main = bracket
@@ -148,20 +152,16 @@ main = bracket
 
   -- run computation
   $ \tmp -> do
-    -- check for executable files
-    let execs = ["pandoc", "pdflatex", "bibtex"]
-    paths <- mapM findExecutable execs
-    let miss = map snd $ filter (isNothing . fst) $ zip paths execs
-    unless (null miss) $ exit $! "Could not find " ++ intercalate ", " miss
     args <- getArgs
     -- check for invalid arguments and print help message if needed
-    let goodopts = ["-f","-r","-N", "-p","-R","-H","-B","-A", "-C","-o"]
+    let goodopts = ["-f","-r","-N", "-p","-R","-H","-B","-A", "-C","-o","-V"]
     let goodoptslong = ["--from","--read","--strict",
                    "--preserve-tabs","--tab-stop","--parse-raw",
-                   "--toc","--table-of-contents",
+                   "--toc","--table-of-contents", "--xetex",
                    "--number-sections","--include-in-header",
                    "--include-before-body","--include-after-body",
-                   "--custom-header","--output"]
+                   "--custom-header","--output",
+                   "--template", "--variable"]
     let isOpt ('-':_) = True
         isOpt _       = False
     let opts = filter isOpt args
@@ -174,6 +174,15 @@ main = bracket
       putStr $ unlines $
                filter (\l -> any (`isInfixOf` l) goodoptslong) $ lines out
       exitWith code
+
+    -- check for executable files
+    let latexProgram = if "--xetex" `elem` opts
+                          then "xelatex"
+                          else "pdflatex"
+    let execs = ["pandoc", latexProgram, "bibtex"]
+    paths <- mapM findExecutable execs
+    let miss = map snd $ filter (isNothing . fst) $ zip paths execs
+    unless (null miss) $ exit $! "Could not find " ++ intercalate ", " miss
 
     -- parse arguments
     -- if no input given, use 'stdin'
@@ -193,7 +202,7 @@ main = bracket
       Left err -> exit err
       Right texFile  -> do
         -- run pdflatex
-        latexRes <- runLatex texFile
+        latexRes <- runLatex latexProgram texFile
         case latexRes of
           Left err      -> exit err
           Right pdfFile -> do

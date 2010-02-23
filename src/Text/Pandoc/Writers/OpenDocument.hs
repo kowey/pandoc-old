@@ -32,6 +32,7 @@ module Text.Pandoc.Writers.OpenDocument ( writeOpenDocument ) where
 import Text.Pandoc.Definition
 import Text.Pandoc.Shared
 import Text.Pandoc.XML
+import Text.Pandoc.Templates (renderTemplate)
 import Text.Pandoc.Readers.TeXMath
 import Text.PrettyPrint.HughesPJ hiding ( Str )
 import Text.Printf ( printf )
@@ -39,7 +40,6 @@ import Control.Applicative ( (<$>) )
 import Control.Arrow ( (***), (>>>) )
 import Control.Monad.State hiding ( when )
 import Data.Char (chr)
-import Data.List (intercalate)
 
 -- | Auxiliary function to convert Plain block to Para.
 plainToPara :: Block -> Block
@@ -156,58 +156,43 @@ handleSpaces s
         rm (   x:xs) = char  x  <> rm xs
         rm        [] = empty
 
--- | Convert list of authors to a docbook <author> section
-authorToOpenDocument :: [Char] -> Doc
-authorToOpenDocument name =
-  if ',' `elem` name
-    then -- last name first
-         let (lastname, rest) = break (==',') name
-             firstname = removeLeadingSpace rest
-         in  inParagraphTagsWithStyle "Author" $
-                 (text $ escapeStringForXML firstname) <+>
-                 (text $ escapeStringForXML lastname)
-    else -- last name last
-         let namewords = words name
-             lengthname = length namewords
-             (firstname, lastname) = case lengthname of
-               0  -> ("","")
-               1  -> ("", name)
-               n  -> (intercalate " " (take (n-1) namewords), last namewords)
-          in inParagraphTagsWithStyle "Author" $
-                 (text $ escapeStringForXML firstname) <+>
-                 (text $ escapeStringForXML lastname)
-
 -- | Convert Pandoc document to string in OpenDocument format.
 writeOpenDocument :: WriterOptions -> Pandoc -> String
 writeOpenDocument opts (Pandoc (Meta title authors date) blocks) =
-  let root     = inTags True "office:document-content" openDocumentNameSpaces
-      header   = when (writerStandalone opts) $ text (writerHeader opts)
-      title'   = case runState (wrap opts title) defaultWriterState of
-                   (t,_) -> if isEmpty t then empty else inHeaderTags 1 t
-      authors' = when (authors /= []) $ vcat (map authorToOpenDocument authors)
-      date'    = when (date    /= []) $
-                 inParagraphTagsWithStyle "Date" (text $ escapeStringForXML date)
-      meta     = when (writerStandalone opts) $ title' $$ authors' $$ date'
+  let ((doc, title', authors', date'),s) = flip runState
+        defaultWriterState $ do
+           title'' <- inlinesToOpenDocument opts title 
+           authors'' <- mapM (inlinesToOpenDocument opts) authors
+           date'' <- inlinesToOpenDocument opts date
+           doc'' <- blocksToOpenDocument opts blocks
+           return (doc'', title'', authors'', date'')
       before   = writerIncludeBefore opts
       after    = writerIncludeAfter opts
-      (doc, s) = runState (blocksToOpenDocument opts blocks) defaultWriterState
       body     = (if null before then empty else text before) $$
                  doc $$
                  (if null after then empty else text after)
-      body'    = if writerStandalone opts
-                   then inTagsIndented "office:body" $
-                        inTagsIndented "office:text" (meta $$ body)
-                   else body
+      body'    = render body
       styles   = stTableStyles s ++ stParaStyles s ++ stTextStyles s
-      listStyle (n,l) = inTags True "text:list-style" [("style:name", "L" ++ show n)] (vcat l)
+      listStyle (n,l) = inTags True "text:list-style"
+                          [("style:name", "L" ++ show n)] (vcat l)
       listStyles  = map listStyle (stListStyles s)
-  in  render $ header $$ root (generateStyles (styles ++ listStyles) $$ body' $$ text "")
+      automaticStyles = inTagsIndented "office:automatic-styles" $ vcat $
+                          reverse $ styles ++ listStyles
+      context = writerVariables opts ++
+                [ ("body", body')
+                , ("automatic-styles", render automaticStyles)
+                , ("title", render title')
+                , ("date", render date') ] ++
+                [ ("author", render a) | a <- authors' ]
+  in  if writerStandalone opts
+         then renderTemplate context $ writerTemplate opts
+         else body'
 
 withParagraphStyle :: WriterOptions -> String -> [Block] -> State WriterState Doc
 withParagraphStyle  o s (b:bs)
     | Para l <- b = go =<< inParagraphTagsWithStyle s <$> inlinesToOpenDocument o l
     | otherwise   = go =<< blockToOpenDocument o b
-    where go i = ($$) i <$>  withParagraphStyle o s bs
+    where go i = (<>) i <$>  withParagraphStyle o s bs
 withParagraphStyle _ _ [] = return empty
 
 inPreformattedTags :: String -> State WriterState Doc
@@ -260,14 +245,14 @@ listItemsToOpenDocument :: String -> WriterOptions -> [[Block]] -> State WriterS
 listItemsToOpenDocument s o is =
     vcat . map (inTagsIndented "text:list-item") <$> mapM (withParagraphStyle o s . map plainToPara) is
 
-deflistItemToOpenDocument :: WriterOptions -> ([Inline],[Block]) -> State WriterState Doc
+deflistItemToOpenDocument :: WriterOptions -> ([Inline],[[Block]]) -> State WriterState Doc
 deflistItemToOpenDocument o (t,d) = do
-  let ts = if isTightList [d]
+  let ts = if isTightList d
            then "Definition_20_Term_20_Tight"       else "Definition_20_Term"
-      ds = if isTightList [d]
+      ds = if isTightList d
            then "Definition_20_Definition_20_Tight" else "Definition_20_Definition"
   t' <- withParagraphStyle o ts [Para t]
-  d' <- withParagraphStyle o ds (map plainToPara d)
+  d' <- liftM vcat $ mapM (withParagraphStyle o ds . (map plainToPara)) d
   return $ t' $$ d'
 
 inBlockQuote :: WriterOptions -> Int -> [Block] -> State WriterState Doc
@@ -287,9 +272,9 @@ blocksToOpenDocument o b = vcat <$> mapM (blockToOpenDocument o) b
 -- | Convert a Pandoc block element to OpenDocument.
 blockToOpenDocument :: WriterOptions -> Block -> State WriterState Doc
 blockToOpenDocument o bs
-    | Plain          b <- bs = inParagraphTags <$> wrap o b
-    | Para           b <- bs = inParagraphTags <$> wrap o b
-    | Header       i b <- bs = inHeaderTags  i <$> wrap o b
+    | Plain          b <- bs = inParagraphTags <$> inlinesToOpenDocument o b
+    | Para           b <- bs = inParagraphTags <$> inlinesToOpenDocument o b
+    | Header       i b <- bs = inHeaderTags  i <$> inlinesToOpenDocument o b
     | BlockQuote     b <- bs = mkBlockQuote b
     | CodeBlock    _ s <- bs = preformatted s
     | RawHtml        _ <- bs = return empty
@@ -352,12 +337,6 @@ tableItemToOpenDocument o tn (n,i) =
   in  inTags True "table:table-cell" a <$>
       withParagraphStyle o n (map plainToPara i)
 
--- | Take list of inline elements and return wrapped doc.
-wrap :: WriterOptions -> [Inline] -> State WriterState Doc
-wrap o l = if writerWrapText o
-                then fsep <$> mapM (inlinesToOpenDocument o) (splitBy Space l)
-                else inlinesToOpenDocument o l
-
 -- | Convert a list of inline elements to OpenDocument.
 inlinesToOpenDocument :: WriterOptions -> [Inline] -> State WriterState Doc
 inlinesToOpenDocument o l = hcat <$> mapM (inlineToOpenDocument o) l
@@ -404,21 +383,11 @@ inlineToOpenDocument o ils
         let footNote t = inTags False "text:note"
                          [ ("text:id"        , "ftn" ++ show n)
                          , ("text:note-class", "footnote"     )] $
-                         inTagsSimple "text:note-citation" (text . show $ n + 1) $$
+                         inTagsSimple "text:note-citation" (text . show $ n + 1) <> 
                          inTagsSimple "text:note-body" t
         nn <- footNote <$> withParagraphStyle o "Footnote" l
         addNote nn
         return nn
-
-generateStyles :: [Doc] -> Doc
-generateStyles acc =
-    let scripts = selfClosingTag "office:scripts" []
-        fonts   = inTagsIndented "office:font-face-decls"
-                  (vcat $ map font ["Lucida Sans Unicode", "Tahoma", "Times New Roman"])
-        font fn = selfClosingTag "style:font-face"
-                  [ ("style:name"     , "&apos;" ++ fn ++ "&apos;")
-                  , ("svg:font-family", fn                        )]
-    in  scripts $$ fonts $$ inTagsIndented "office:automatic-styles" (vcat $ reverse acc)
 
 bulletListStyle :: Int -> State WriterState (Int,(Int,[Doc]))
 bulletListStyle l =
@@ -467,13 +436,15 @@ tableStyle num wcs =
         table          = inTags True "style:style"
                          [("style:name", tableId)] $
                          selfClosingTag "style:table-properties"
-                         [ ("style:rel-width", "100%"  )
-                         , ("table:align"    , "center")]
+                         [("table:align"    , "center")]
+        colStyle (c,0) = selfClosingTag "style:style"
+                         [ ("style:name"  , tableId ++ "." ++ [c])
+                         , ("style:family", "table-column"       )]
         colStyle (c,w) = inTags True "style:style"
                          [ ("style:name"  , tableId ++ "." ++ [c])
                          , ("style:family", "table-column"       )] $
                          selfClosingTag "style:table-column-properties"
-                         [("style:column-width", printf "%.2f" (7 * w) ++ "in")]
+                         [("style:rel-column-width", printf "%d*" $ (floor $ w * 65535 :: Integer))]
         cellStyle      = inTags True "style:style"
                          [ ("style:name"  , tableId ++ ".A1")
                          , ("style:family", "table-cell"    )] $
@@ -539,30 +510,3 @@ textStyleAttr s
     | SmallC <- s = [("fo:font-variant"              ,"small-caps")]
     | otherwise   = []
 
-openDocumentNameSpaces :: [(String, String)]
-openDocumentNameSpaces =
-    [ ("xmlns:office"  , "urn:oasis:names:tc:opendocument:xmlns:office:1.0"           )
-    , ("xmlns:style"   , "urn:oasis:names:tc:opendocument:xmlns:style:1.0"            )
-    , ("xmlns:text"    , "urn:oasis:names:tc:opendocument:xmlns:text:1.0"             )
-    , ("xmlns:table"   , "urn:oasis:names:tc:opendocument:xmlns:table:1.0"            )
-    , ("xmlns:draw"    , "urn:oasis:names:tc:opendocument:xmlns:drawing:1.0"          )
-    , ("xmlns:fo"      , "urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0")
-    , ("xmlns:xlink"   , "http://www.w3.org/1999/xlink"                               )
-    , ("xmlns:dc"      , "http://purl.org/dc/elements/1.1/"                           )
-    , ("xmlns:meta"    , "urn:oasis:names:tc:opendocument:xmlns:meta:1.0"             )
-    , ("xmlns:number"  , "urn:oasis:names:tc:opendocument:xmlns:datastyle:1.0"        )
-    , ("xmlns:svg"     , "urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0"   )
-    , ("xmlns:chart"   , "urn:oasis:names:tc:opendocument:xmlns:chart:1.0"            )
-    , ("xmlns:dr3d"    , "urn:oasis:names:tc:opendocument:xmlns:dr3d:1.0"             )
-    , ("xmlns:math"    , "http://www.w3.org/1998/Math/MathML"                         )
-    , ("xmlns:form"    , "urn:oasis:names:tc:opendocument:xmlns:form:1.0"             )
-    , ("xmlns:script"  , "urn:oasis:names:tc:opendocument:xmlns:script:1.0"           )
-    , ("xmlns:ooo"     , "http://openoffice.org/2004/office"                          )
-    , ("xmlns:ooow"    , "http://openoffice.org/2004/writer"                          )
-    , ("xmlns:oooc"    , "http://openoffice.org/2004/calc"                            )
-    , ("xmlns:dom"     , "http://www.w3.org/2001/xml-events"                          )
-    , ("xmlns:xforms"  , "http://www.w3.org/2002/xforms"                              )
-    , ("xmlns:xsd"     , "http://www.w3.org/2001/XMLSchema"                           )
-    , ("xmlns:xsi"     , "http://www.w3.org/2001/XMLSchema-instance"                  )
-    , ("office:version", "1.0"                                                        )
-    ]

@@ -1,0 +1,12 @@
+$if(has-tables)$
+.\"t
+$endif$
+.TH $title$ $section$ "$date$" $description$
+$for(header-includes)$
+$header-includes$
+$endfor$
+$body$
+$if(author)$
+.SH AUTHORS
+$for(author)$$author$$sep$; $endfor$.
+$endif$

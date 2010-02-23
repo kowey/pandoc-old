@@ -7,7 +7,7 @@
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
 AppId={{3CEE7B38-B19D-4980-9CAD-DF53600BD4CA}
 AppName=Pandoc
-AppVerName=Pandoc 1.2.1
+AppVerName=Pandoc 1.4
 AppPublisher=John MacFarlane
 AppPublisherURL=http://johnmacfarlane.net/pandoc/
 AppSupportURL=http://johnmacfarlane.net/pandoc/
@@ -16,7 +16,7 @@ DefaultDirName={code:DefDirRoot}\Pandoc
 DefaultGroupName=Pandoc
 AllowNoIcons=yes
 LicenseFile="..\COPYING.txt"
-OutputBaseFilename=setup
+OutputBaseFilename=pandoc-setup
 Compression=lzma
 SolidCompression=yes
 ChangesEnvironment=yes
@@ -31,7 +31,7 @@ var
     Dir: TArrayOfString;
 begin
     setArrayLength(Dir, 1)
-    Dir[0] := ExpandConstant('{app}');
+    Dir[0] := ExpandConstant('{app}\bin');
     Result := Dir;
 end;
 #include "modpath.iss"
@@ -51,31 +51,20 @@ end;
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
-Name: "basque"; MessagesFile: "compiler:Languages\Basque.isl"
-Name: "brazilianportuguese"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"
-Name: "catalan"; MessagesFile: "compiler:Languages\Catalan.isl"
-Name: "czech"; MessagesFile: "compiler:Languages\Czech.isl"
-Name: "danish"; MessagesFile: "compiler:Languages\Danish.isl"
-Name: "dutch"; MessagesFile: "compiler:Languages\Dutch.isl"
-Name: "finnish"; MessagesFile: "compiler:Languages\Finnish.isl"
-Name: "french"; MessagesFile: "compiler:Languages\French.isl"
-Name: "german"; MessagesFile: "compiler:Languages\German.isl"
-Name: "hebrew"; MessagesFile: "compiler:Languages\Hebrew.isl"
-Name: "hungarian"; MessagesFile: "compiler:Languages\Hungarian.isl"
-Name: "italian"; MessagesFile: "compiler:Languages\Italian.isl"
-Name: "norwegian"; MessagesFile: "compiler:Languages\Norwegian.isl"
-Name: "polish"; MessagesFile: "compiler:Languages\Polish.isl"
-Name: "portuguese"; MessagesFile: "compiler:Languages\Portuguese.isl"
-Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"
-Name: "slovak"; MessagesFile: "compiler:Languages\Slovak.isl"
-Name: "slovenian"; MessagesFile: "compiler:Languages\Slovenian.isl"
-Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
 
 [Files]
-Source: "..\dist\build\pandoc\pandoc.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\dist\build\pandoc\pandoc.exe"; DestDir: "{app}\bin"; Flags: ignoreversion
+Source: "..\dist\build\hsmarkdown\hsmarkdown.exe"; DestDir: "{app}\bin"; Flags: ignoreversion
+Source: "..\dist\build\markdown2pdf\markdown2pdf.exe"; DestDir: "{app}\bin"; Flags: ignoreversion
 Source: "..\README.html"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\COPYRIGHT.txt"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\COPYING.txt"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\reference.odt"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\templates\*"; DestDir: "{app}\templates"; Flags: ignoreversion
+Source: "..\data\*"; DestDir: "{app}\data"; Flags: ignoreversion
+Source: "..\s5\default\*"; DestDir: "{app}\s5\default"; Flags: ignoreversion
+Source: "pcre-license.txt"; DestDir: "{app}"; Flags: ignoreversion
+Source: "pcre3.dll"; DestDir: "{sys}"; Flags: onlyifdoesntexist sharedfile
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]

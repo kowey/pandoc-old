@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 {-
 Copyright (C) 2006-8 John MacFarlane <jgm@berkeley.edu>
 
@@ -106,7 +106,8 @@ module Text.Pandoc.Shared (
                      WriterOptions (..),
                      defaultWriterOptions,
                      -- * File handling
-                     inDirectory
+                     inDirectory,
+                     readDataFile
                     ) where
 
 import Text.Pandoc.Definition
@@ -119,12 +120,18 @@ import Data.Char ( toLower, toUpper, ord, isLower, isUpper, isAlpha,
 import Data.List ( find, isPrefixOf, intercalate )
 import Network.URI ( parseURI, URI (..), isAllowedInURI )
 import System.Directory
-import Prelude hiding ( putStrLn, writeFile, readFile, getContents )
+import System.FilePath ( (</>) )
+-- Note: ghc >= 6.12 (base >=4.2) supports unicode through iconv
+-- So we use System.IO.UTF8 only if we have an earlier version
+#if MIN_VERSION_base(4,2,0)
+#else
+import Prelude hiding ( putStr, putStrLn, writeFile, readFile, getContents )
 import System.IO.UTF8
+#endif
 import Data.Generics
 import qualified Control.Monad.State as S
 import Control.Monad (join)
-
+import Paths_pandoc (getDataFileName)
 --
 -- List processing
 --
@@ -677,13 +684,14 @@ data ParserState = ParserState
       stateTabStop         :: Int,           -- ^ Tab stop
       stateStandalone      :: Bool,          -- ^ Parse bibliographic info?
       stateTitle           :: [Inline],      -- ^ Title of document
-      stateAuthors         :: [String],      -- ^ Authors of document
-      stateDate            :: String,        -- ^ Date of document
+      stateAuthors         :: [[Inline]],    -- ^ Authors of document
+      stateDate            :: [Inline],      -- ^ Date of document
       stateStrict          :: Bool,          -- ^ Use strict markdown syntax?
       stateSmart           :: Bool,          -- ^ Use smart typography?
       stateLiterateHaskell :: Bool,          -- ^ Treat input as literate haskell
       stateColumns         :: Int,           -- ^ Number of columns in terminal
-      stateHeaderTable     :: [HeaderType]   -- ^ Ordered list of header types used
+      stateHeaderTable     :: [HeaderType],  -- ^ Ordered list of header types used
+      stateIndentedCodeClasses :: [String]   -- ^ Classes to use for indented code blocks
     }
     deriving Show
 
@@ -707,7 +715,8 @@ defaultParserState =
                   stateSmart           = False,
                   stateLiterateHaskell = False,
                   stateColumns         = 80,
-                  stateHeaderTable     = [] }
+                  stateHeaderTable     = [],
+                  stateIndentedCodeClasses = [] }
 
 data HeaderType 
     = SingleHeader Char  -- ^ Single line of characters underneath
@@ -725,7 +734,7 @@ data QuoteContext
     | NoQuote         -- ^ Used when not parsing inside quotes
     deriving (Eq, Show)
 
-type NoteTable = [(String, [Block])]
+type NoteTable = [(String, String)]
 
 type KeyTable = [([Inline], Target)]
 
@@ -806,10 +815,12 @@ prettyBlock (OrderedList attribs blockLists) =
 prettyBlock (BulletList blockLists) = "BulletList\n" ++ 
   indentBy 2 0 ("[ " ++ (intercalate ", "
   (map (\blocks -> prettyBlockList 2 blocks) blockLists))) ++ " ]" 
-prettyBlock (DefinitionList blockLists) = "DefinitionList\n" ++ 
-  indentBy 2 0 ("[" ++ (intercalate ",\n"
-  (map (\(term, blocks) -> "  (" ++ show term ++ ",\n" ++ 
-  indentBy 1 2 (prettyBlockList 2 blocks) ++ "  )") blockLists))) ++ " ]" 
+prettyBlock (DefinitionList items) = "DefinitionList\n" ++ 
+  indentBy 2 0 ("[ " ++ (intercalate "\n, "
+  (map (\(term, defs) -> "(" ++ show term ++ ",\n" ++ 
+  indentBy 3 0 ("[ " ++ (intercalate ", "
+  (map (\blocks -> prettyBlockList 2 blocks) defs)) ++ "]") ++
+   ")") items))) ++ " ]" 
 prettyBlock (Table caption aligns widths header rows) = 
   "Table " ++ show caption ++ " " ++ show aligns ++ " " ++ 
   show widths ++ "\n" ++ prettyRow header ++ " [\n" ++  
@@ -868,34 +879,30 @@ normalizeSpaces list =
                                 else lst
     in  removeLeading $ removeTrailing $ removeDoubles list
 
--- | Change final list item from @Para@ to @Plain@ if the list should 
--- be compact.
+-- | Change final list item from @Para@ to @Plain@ if the list contains
+-- no other @Para@ blocks.
 compactify :: [[Block]]  -- ^ List of list items (each a list of blocks)
            -> [[Block]]
 compactify [] = []
 compactify items =
-    let final  = last items
-        others = init items
-    in  case last final of
-          Para a  -> if all endsWithPlain others && not (null final)
-                        then others ++ [init final ++ [Plain a]]
-                        else items
-          _       -> items
+  case (init items, last items) of
+       (_,[])          -> items
+       (others, final) ->
+            case last final of
+                 Para a -> case (filter isPara $ concat items) of
+                                -- if this is only Para, change to Plain
+                                [_] -> others ++ [init final ++ [Plain a]]
+                                _   -> items
+                 _      -> items
 
-endsWithPlain :: [Block] -> Bool
-endsWithPlain [] = False
-endsWithPlain blocks =
-  case last blocks of
-       Plain _                  -> True
-       (BulletList (x:xs))      -> endsWithPlain $ last (x:xs)
-       (OrderedList _ (x:xs))   -> endsWithPlain $ last (x:xs)
-       (DefinitionList (x:xs))  -> endsWithPlain $ last $ map snd (x:xs)
-       _                        -> False
+isPara :: Block -> Bool
+isPara (Para _) = True
+isPara _        = False
 
 -- | Data structure for defining hierarchical Pandoc documents
 data Element = Blk Block 
-             | Sec Int String [Inline] [Element]
-             --    lvl  ident  label    contents
+             | Sec Int [Int] String [Inline] [Element]
+             --    lvl  num ident  label    contents
              deriving (Eq, Read, Show, Typeable, Data)
 
 -- | Convert Pandoc inline list to plain text identifier.
@@ -907,7 +914,7 @@ inlineListToIdentifier' [] = ""
 inlineListToIdentifier' (x:xs) =
   xAsText ++ inlineListToIdentifier' xs
   where xAsText = case x of
-          Str s          -> filter (\c -> c == '-' || not (isPunctuation c)) $
+          Str s          -> filter (\c -> c `elem` "_-.~" || not (isPunctuation c)) $
                             intercalate "-" $ words $ map toLower s
           Emph lst       -> inlineListToIdentifier' lst
           Strikeout lst  -> inlineListToIdentifier' lst
@@ -933,18 +940,22 @@ inlineListToIdentifier' (x:xs) =
 
 -- | Convert list of Pandoc blocks into (hierarchical) list of Elements
 hierarchicalize :: [Block] -> [Element]
-hierarchicalize blocks = S.evalState (hierarchicalizeWithIds blocks) []
+hierarchicalize blocks = S.evalState (hierarchicalizeWithIds blocks) ([],[])
 
-hierarchicalizeWithIds :: [Block] -> S.State [String] [Element]
+hierarchicalizeWithIds :: [Block] -> S.State ([Int],[String]) [Element]
 hierarchicalizeWithIds [] = return []
 hierarchicalizeWithIds ((Header level title'):xs) = do
-  usedIdents <- S.get
+  (lastnum, usedIdents) <- S.get
   let ident = uniqueIdent title' usedIdents
-  S.modify (ident :)
+  let lastnum' = take level lastnum
+  let newnum = if length lastnum' >= level
+                  then init lastnum' ++ [last lastnum' + 1] 
+                  else lastnum ++ replicate (level - length lastnum - 1) 0 ++ [1]
+  S.put (newnum, (ident : usedIdents))
   let (sectionContents, rest) = break (headerLtEq level) xs
   sectionContents' <- hierarchicalizeWithIds sectionContents
   rest' <- hierarchicalizeWithIds rest
-  return $ Sec level ident title' sectionContents' : rest'
+  return $ Sec level newnum ident title' sectionContents' : rest'
 hierarchicalizeWithIds (x:rest) = do
   rest' <- hierarchicalizeWithIds rest
   return $ (Blk x) : rest'
@@ -988,44 +999,48 @@ data ObfuscationMethod = NoObfuscation
 -- | Options for writers
 data WriterOptions = WriterOptions
   { writerStandalone       :: Bool   -- ^ Include header and footer
-  , writerHeader           :: String -- ^ Header for the document
-  , writerTitlePrefix      :: String -- ^ Prefix for HTML titles
+  , writerTemplate         :: String -- ^ Template to use in standalone mode
+  , writerVariables        :: [(String, String)] -- ^ Variables to set in template
+  , writerIncludeBefore    :: String -- ^ Text to include before the body
+  , writerIncludeAfter     :: String -- ^ Text to include after the body
   , writerTabStop          :: Int    -- ^ Tabstop for conversion btw spaces and tabs
   , writerTableOfContents  :: Bool   -- ^ Include table of contents
   , writerS5               :: Bool   -- ^ We're writing S5 
+  , writerXeTeX            :: Bool   -- ^ Create latex suitable for use by xetex
   , writerHTMLMathMethod   :: HTMLMathMethod  -- ^ How to print math in HTML
   , writerIgnoreNotes      :: Bool   -- ^ Ignore footnotes (used in making toc)
   , writerIncremental      :: Bool   -- ^ Incremental S5 lists
   , writerNumberSections   :: Bool   -- ^ Number sections in LaTeX
-  , writerIncludeBefore    :: String -- ^ String to include before the body
-  , writerIncludeAfter     :: String -- ^ String to include after the body
   , writerStrictMarkdown   :: Bool   -- ^ Use strict markdown syntax
   , writerReferenceLinks   :: Bool   -- ^ Use reference links in writing markdown, rst
   , writerWrapText         :: Bool   -- ^ Wrap text to line length
   , writerLiterateHaskell  :: Bool   -- ^ Write as literate haskell
   , writerEmailObfuscation :: ObfuscationMethod -- ^ How to obfuscate emails
+  , writerIdentifierPrefix :: String -- ^ Prefix for section & note ids in HTML
   } deriving Show
 
 -- | Default writer options.
 defaultWriterOptions :: WriterOptions
 defaultWriterOptions = 
   WriterOptions { writerStandalone       = False
-                , writerHeader           = ""
-                , writerTitlePrefix      = ""
+                , writerTemplate         = ""
+                , writerVariables        = []
+                , writerIncludeBefore    = ""
+                , writerIncludeAfter     = ""
                 , writerTabStop          = 4
                 , writerTableOfContents  = False
                 , writerS5               = False
+                , writerXeTeX            = False
                 , writerHTMLMathMethod   = PlainMath
                 , writerIgnoreNotes      = False
                 , writerIncremental      = False
                 , writerNumberSections   = False
-                , writerIncludeBefore    = ""
-                , writerIncludeAfter     = ""
                 , writerStrictMarkdown   = False
                 , writerReferenceLinks   = False
                 , writerWrapText         = True
                 , writerLiterateHaskell  = False
                 , writerEmailObfuscation = JavascriptObfuscation
+                , writerIdentifierPrefix = ""
                 }
 
 --
@@ -1040,3 +1055,12 @@ inDirectory path action = do
   result <- action
   setCurrentDirectory oldDir
   return result
+
+-- | Read file from specified user data directory or, if not found there, from
+-- Cabal data directory.
+readDataFile :: Maybe FilePath -> FilePath -> IO String
+readDataFile userDir fname =
+  case userDir of
+       Nothing  -> getDataFileName fname >>= readFile
+       Just u   -> catch (readFile $ u </> fname)
+                   (\_ -> getDataFileName fname >>= readFile)

@@ -8,11 +8,13 @@
 -- If the lhs argument is provided, tests for lhs support will be
 -- run.  These presuppose that pandoc has been compiled with the
 -- -fhighlighting flag, so these tests are not run by default.
+--
+-- This program assumes that the Diff package has been installed:
+-- cabal install Diff
 
 module Main where
-import System.Exit
 import System.IO.UTF8
-import System.IO ( openTempFile, stderr )
+import System.IO ( openTempFile, stderr, stdout, hFlush )
 import Prelude hiding ( putStrLn, putStr, readFile )
 import System.Process ( runProcess, waitForProcess )
 import System.FilePath ( (</>), (<.>) )
@@ -20,7 +22,7 @@ import System.Directory
 import System.Environment
 import System.Exit
 import Text.Printf
-import Diff
+import Data.Algorithm.Diff
 
 pandocPath :: FilePath
 pandocPath = ".." </> "dist" </> "build" </> "pandoc" </> "pandoc"
@@ -91,6 +93,8 @@ main = do
              "markdown-reader-more.txt" "markdown-reader-more.native"
   r8 <- runTest "rst reader" ["-r", "rst", "-w", "native", "-s", "-S"]
              "rst-reader.rst" "rst-reader.native"
+  r8a <- runTest "rst reader (tables)" ["-r", "rst", "-w", "native"]
+             "tables.rst" "tables-rstsubset.native"
   r9 <- runTest "html reader" ["-r", "html", "-w", "native", "-s"]
              "html-reader.html" "html-reader.native"
   r10 <- runTest "latex reader" ["-r", "latex", "-w", "native", "-s", "-R"]
@@ -108,7 +112,7 @@ main = do
   let results = r1s ++
                 [ r2, r3, r4, r5 -- S5
                 , r6, r7, r7a    -- markdown reader
-                , r8
+                , r8, r8a
                 , r9
                 , r10
                 , rMW
@@ -153,11 +157,14 @@ runTest  :: String                      -- ^ Title of test
          -> FilePath                    -- ^ Norm (for test results) filepath
          -> IO Bool
 runTest testname opts inp norm = do
+  putStr $ printf "%-28s ---> " testname
   (outputPath, hOut) <- openTempFile "" "pandoc-test"
   let inpPath = inp
   let normPath = norm
+  hFlush stdout
   -- Note: COLUMNS must be set for markdown table reader
-  ph <- runProcess pandocPath (opts ++ [inpPath]) Nothing (Just [("COLUMNS", "80")]) Nothing (Just hOut) (Just stderr)
+  -- and we need LANG set for ghc 6.12
+  ph <- runProcess pandocPath (opts ++ [inpPath] ++ ["--data-dir", ".."]) Nothing (Just [("COLUMNS", "80"),("LANG","en_US.UTF-8")]) Nothing (Just hOut) (Just stderr)
   ec <- waitForProcess ph
   result  <- if ec == ExitSuccess
                 then do
@@ -169,5 +176,5 @@ runTest testname opts inp norm = do
                      else return $ TestFailed $ getDiff (lines outputContents) (lines normContents)
                 else return $ TestError ec
   removeFile outputPath
-  putStrLn $ printf "%-28s ---> %s" testname (show result)
+  putStrLn (show result)
   return (result == TestPassed)

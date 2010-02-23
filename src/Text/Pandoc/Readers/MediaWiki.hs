@@ -547,7 +547,10 @@ stringWithBrackets delims stop = helper False
    <|> do lookAhead . oneOf $ if allow then stop else delims ++ stop
           return []
    where
-    betweenWrap l r p = between (char l) (char r) (wrapTxt l r `fmap` p)
+    betweenWrap l r p =
+      do s  <- between (char l) (char r) (wrapTxt l r `fmap` p)
+         s2 <- helper False
+         return $ s ++ s2
     wrapTxt l r s = showChar l (showString s [r])
 
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --

@@ -47,4 +47,4 @@ Another:
 * [[Image:foo bar|cap]]
 * [[Image:foo bar|cap']]
 * [[Image:foo bar|quux mah mah|cap]]
-* [[Image:foo|thumb|400px|right|caption with [[fancy link|link]]]]
+* [[Image:foo|thumb|400px|right|[[caption]] with [[fancy links|link]]]]

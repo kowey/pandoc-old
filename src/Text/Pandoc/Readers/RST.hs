@@ -33,7 +33,7 @@ module Text.Pandoc.Readers.RST (
 import Text.Pandoc.Definition
 import Text.Pandoc.Shared 
 import Text.ParserCombinators.Parsec
-import Control.Monad ( when, unless, liftM )
+import Control.Monad ( when, unless )
 import Data.List ( findIndex, delete, intercalate, transpose )
 
 -- | Parse reStructuredText string and return Pandoc document.

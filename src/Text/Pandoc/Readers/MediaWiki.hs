@@ -63,7 +63,7 @@ readMediaWiki state s = (readWith parseMediaWiki) state (stripTrailingNewLines s
 -- | Parse a document which is a list of blocks.
 parseMediaWiki :: MWP Pandoc
 parseMediaWiki = do
-    let meta = Meta [] [] ""
+    let meta = Meta [] [] []
     blocks <- many parseBlock
     return $ Pandoc meta $ mergePlain blocks
 
@@ -231,13 +231,13 @@ parseDefinitionList = do
     -- | Transform a tree into the data part of a DefinitionList.
     -- The Pandoc data type DefinitionList is a breadth-first data structure, whereas the
     -- intermediate structure is a depth-first structure.
-    mergeTree :: DefinitionTree -> ([Inline], [Block])
-    mergeTree (Data block)          = ([], [block])
-    mergeTree (Definition name sub) = (name, map mergeTree' sub)
+    mergeTree :: DefinitionTree -> ([Inline], [[Block]])
+    mergeTree (Data block)          = ([], [[block]])
+    mergeTree (Definition name sub) = (name, [map mergeTree' sub])
          where
             mergeTree' :: DefinitionTree -> Block
             mergeTree' (Data block')           = block'
-            mergeTree' (Definition name' sub') = DefinitionList [(name', map mergeTree' sub')]
+            mergeTree' (Definition name' sub') = DefinitionList [(name', [map mergeTree' sub'])]
        
 
 

@@ -47,3 +47,12 @@ Another:
 * [[Image:foo bar|cap]]
 * [[Image:foo bar|cap']]
 * [[Image:foo bar|quux mah mah|cap]]
+
+= Table =
+
+{| hoo
+|-
+row one | foo | bar
+|-
+row two | foo | bar
+|}

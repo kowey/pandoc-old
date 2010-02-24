@@ -27,3 +27,9 @@ Pandoc (Meta [] [] "")
   , [ Plain [Link [Str "Foo"] ("Intra","")] ]
   , FIXME
   , [ Plain [Link [Str "bar"] ("http://example.com/foo","")] ] ] ]
+, Para [Str "Table:"]
+, Table [] [] []
+  [ 
+ ] [
+ ] ]
+

@@ -41,6 +41,7 @@ Another:
 * [[Simple intra]]
 * [[Simple intra ' 2]]
 * [[Intra | Foo]]
+* Some text ([[Link in parentheses]])
 * http://example.com/bar
 * [http://example.com/foo bar]
 * [[Image:foo bar]]

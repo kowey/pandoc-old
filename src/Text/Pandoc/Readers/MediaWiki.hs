@@ -299,7 +299,7 @@ parseInlines delims = do
                                   parseLineBreak, parseApostrophe, parseString]
         return inlines
 
-    specialChars    = " -.\n\'"
+    specialChars    = " -.\n\'["
     parseSpace      = do { char ' '; return Space }
     parseEmDash     = do { try $ count 3 $ char '-'; return EmDash }
     parseEnDash     = do { try $ count 2 $ char '-'; return EnDash }

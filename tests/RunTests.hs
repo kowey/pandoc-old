@@ -112,12 +112,12 @@ main = do
   let results = r1s ++
                 [ r2, r3, r4, r5 -- S5
                 , r6, r7, r7a    -- markdown reader
-                , r8, r8a
-                , r9
-                , r10
-                , rMW
-                , r11
-                ] ++ r12s ++ r13s
+                , r8, r8a        -- rst
+                , r9             -- html
+                , r10            -- latex
+                , rMW            -- mediawiki
+                , r11            -- native
+                ] ++ r12s ++ r13s  if all id results
   if all id results
      then do
        putStrLn "\nAll tests passed."

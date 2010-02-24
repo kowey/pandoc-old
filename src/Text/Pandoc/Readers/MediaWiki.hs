@@ -597,3 +597,4 @@ stripSpaces = stripAll [Space]
 stripWhiteSpace :: [Inline] -> [Inline]
 stripWhiteSpace = stripAll [Space, LineBreak]
 
+

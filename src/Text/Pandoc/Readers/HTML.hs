@@ -35,11 +35,13 @@ module Text.Pandoc.Readers.HTML (
                                  anyHtmlInlineTag,  
                                  anyHtmlTag,
                                  anyHtmlEndTag,
+                                 htmlTag,
                                  htmlEndTag,
                                  extractTagType,
                                  htmlBlockElement,
                                  htmlComment,
-                                 unsanitaryURI
+                                 unsanitaryURI,
+                                 htmlAttribute,
                                 ) where
 
 import Text.ParserCombinators.Parsec

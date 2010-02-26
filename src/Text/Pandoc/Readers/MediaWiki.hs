@@ -46,8 +46,9 @@ import Text.Pandoc.Shared
 import Text.ParserCombinators.Parsec
 
 import Text.Pandoc.Readers.HTML ( rawHtmlBlock, anyHtmlBlockTag, 
-                                  anyHtmlInlineTag, anyHtmlTag,
+                                  anyHtmlInlineTag, anyHtmlTag, htmlTag,
                                   anyHtmlEndTag, htmlEndTag, extractTagType,
+                                  htmlAttribute,
                                   htmlBlockElement, htmlComment, unsanitaryURI )
 
 type MWP a = GenParser Char ParserState a
@@ -251,8 +252,52 @@ parseDefinitionList = do
 
 -- this may not be the right approach, as there may be Html within plain
 -- mediawiki text
-parseHtml:: MWP Block
-parseHtml = htmlComment >> return Null
+parseHtml :: MWP Block
+parseHtml = do
+  (htmlComment >> return Null)
+  <|> Plain `fmap` inlineHtml
+
+inlineHtml =
+      singleton `fmap` emph
+  <|> singleton `fmap` strong
+  <|> do { t <- anyHtmlTag
+          ; if selfClosing t then return [Str t] else inlinesTilEnd (extractTagType t)
+          }
+
+selfClosing t =
+ case reverse t of
+   ('>':'/':xs) -> True
+   _ -> False
+
+betweenTags :: [Char] -> GenParser Char ParserState [Inline]
+betweenTags tag = try $ htmlOpenTag tag >> inlinesTilEnd tag >>= 
+                        return . normalizeSpaces
+
+emph :: GenParser Char ParserState Inline
+emph = (betweenTags "em" <|> betweenTags "i") >>= return . Emph
+
+strong :: GenParser Char ParserState Inline
+strong = (betweenTags "b" <|> betweenTags "strong") >>= return . Strong
+
+-- | Read inlines until end tag.
+inlinesTilEnd :: String -> GenParser Char ParserState [Inline]
+inlinesTilEnd tag =
+ concat `fmap` manyTill (inlineHtml
+                         <|> parseInlines "\n<"
+                         <|> do { char '\n' >> return [LineBreak] } 
+                        ) (htmlEndTag tag)
+
+-- no self-closing here, thanks
+htmlOpenTag :: String -> GenParser Char ParserState (String, [(String, String)])
+htmlOpenTag tag = try $ do
+  char '<'
+  spaces
+  stringAnyCase tag
+  attribs <- many htmlAttribute
+  spaces
+  spaces
+  char '>'
+  return (tag, (map (\(name, content, _) -> (name, content)) attribs))
  
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -
 -- ** Parsing Text
@@ -260,7 +305,7 @@ parseHtml = htmlComment >> return Null
 -- | Parse a plain text elements, i.e. a series of Inline terminated by a newline.
 parsePlain :: MWP Block
 parsePlain = do
-    inlines <- parseInlines "\n"
+    inlines <- parseInlines "\n<" -- stop at newline or html start
     return $ Plain $ stripSpaces inlines
 
 -- | Parse a list of inlines.

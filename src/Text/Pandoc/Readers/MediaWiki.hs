@@ -45,6 +45,11 @@ import Text.Pandoc.Definition
 import Text.Pandoc.Shared 
 import Text.ParserCombinators.Parsec
 
+import Text.Pandoc.Readers.HTML ( rawHtmlBlock, anyHtmlBlockTag, 
+                                  anyHtmlInlineTag, anyHtmlTag,
+                                  anyHtmlEndTag, htmlEndTag, extractTagType,
+                                  htmlBlockElement, htmlComment, unsanitaryURI )
+
 type MWP a = GenParser Char ParserState a
 
 test :: String -> Pandoc
@@ -83,6 +88,7 @@ parseBlock = do
          <|> parseBulletList
          <|> parseOrderedList
          <|> parseDefinitionList
+         <|> parseHtml
          <|> parsePlain
          <|> parseEmptyBlock
     return block
@@ -240,8 +246,14 @@ parseDefinitionList = do
             mergeTree' (Data block')           = block'
             mergeTree' (Definition name' sub') = DefinitionList [(name', [map mergeTree' sub'])]
        
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -
+-- ** Parsing blocks of HTML
 
-
+-- this may not be the right approach, as there may be Html within plain
+-- mediawiki text
+parseHtml:: MWP Block
+parseHtml = htmlComment >> return Null
+ 
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -
 -- ** Parsing Text
 

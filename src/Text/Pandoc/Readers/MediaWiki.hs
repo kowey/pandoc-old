@@ -311,7 +311,8 @@ parseInlines delims = do
                                   parseLineBreak, parseApostrophe, parseString]
         return inlines
 
-    specialChars    = " -.\n\'["
+    okSingletons    = "-."
+    specialChars    = " \n\'[" ++ okSingletons
     parseSpace      = do { char ' '; return Space }
     parseEmDash     = do { try $ count 3 $ char '-'; return EmDash }
     parseEnDash     = do { try $ count 2 $ char '-'; return EnDash }
@@ -320,8 +321,7 @@ parseInlines delims = do
     parseApostrophe = do { char '\''; return Apostrophe }
     parseString     = (Str . concat) `fmap` many1 parseStringChunk
     parseStringChunk = do { str <- many1 $ noneOf specialChars; return str }
-                     <|> do { singleton `fmap` char '-' }
-                     <|> do { singleton `fmap` char '.' }
+                     <|> do { singleton `fmap` oneOf okSingletons }
 
 singleton :: a -> [a]
 singleton = (: [])

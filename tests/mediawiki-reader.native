@@ -32,5 +32,6 @@ Pandoc (Meta [] [] [])
   , [ Plain [Image [Str "cap"] ("foo bar","")] ]
   , [ Plain [Image [Str "cap",Apostrophe] ("foo bar","")] ]
   , [ Plain [Image [Str "cap"] ("foo bar","")] ]
-  , [ Plain [Image [Link [Str "caption"] ("caption",""),Space,Str "with",Space,Link [Str "link"] ("fancy links","")] ("foo","")] ] ] ]
-
+  , [ Plain [Image [Link [Str "caption"] ("caption",""),Space,Str "with",Space,Link [Str "link"] ("fancy links","")] ("foo","")] ] ]
+, Header 1 [Str "Html"]
+, Null ]

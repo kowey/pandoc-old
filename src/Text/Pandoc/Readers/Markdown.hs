@@ -73,6 +73,10 @@ specialChars = "\\[]*_~`<>$!^-.&'\"\8216\8217\8220\8221;"
 -- auxiliary functions
 --
 
+-- | Replace spaces with %20
+uriEscapeSpaces :: String -> String
+uriEscapeSpaces = substitute " " "%20"
+
 indentSpaces :: GenParser Char ParserState [Char]
 indentSpaces = try $ do
   state <- getState
@@ -129,15 +133,23 @@ inlinesInBalancedBrackets parser = try $ do
 --
 
 titleLine :: GenParser Char ParserState [Inline]
-titleLine = try $ char '%' >> skipSpaces >> manyTill inline newline
+titleLine = try $ do
+  char '%'
+  skipSpaces
+  res <- many $ (notFollowedBy newline >> inline)
+             <|> try (endline >> whitespace)
+  newline
+  return $ normalizeSpaces res
 
 authorsLine :: GenParser Char ParserState [[Inline]]
 authorsLine = try $ do 
   char '%'
   skipSpaces
-  authors <- sepEndBy (many1 (notFollowedBy (oneOf ";\n") >> inline)) (oneOf ";")
+  authors <- sepEndBy (many (notFollowedBy (oneOf ";\n") >> inline))
+                       (char ';' <|>
+                        try (newline >> notFollowedBy blankline >> spaceChar))
   newline
-  return $ map normalizeSpaces authors
+  return $ filter (not . null) $ map normalizeSpaces authors
 
 dateLine :: GenParser Char ParserState [Inline]
 dateLine = try $ do
@@ -194,7 +206,7 @@ referenceKey = try $ do
   tit <- option "" referenceTitle
   blanklines
   endPos <- getPosition
-  let newkey = (lab, (intercalate "+" $ words $ removeTrailingSpace src,  tit))
+  let newkey = (lab, (uriEscapeSpaces $ removeTrailingSpace src,  tit))
   st <- getState
   let oldkeys = stateKeys st
   updateState $ \s -> s { stateKeys = newkey : oldkeys }
@@ -1173,7 +1185,7 @@ source' = do
   tit <- option "" linkTitle
   skipSpaces
   eof
-  return (intercalate "+" $ words $ removeTrailingSpace src, tit)
+  return (uriEscapeSpaces $ removeTrailingSpace src, tit)
 
 linkTitle :: GenParser Char st String
 linkTitle = try $ do 

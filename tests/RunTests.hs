@@ -117,7 +117,7 @@ main = do
                 , r10            -- latex
                 , rMW            -- mediawiki
                 , r11            -- native
-                ] ++ r12s ++ r13s  if all id results
+                ] ++ r12s ++ r13s
   if all id results
      then do
        putStrLn "\nAll tests passed."

@@ -262,9 +262,11 @@ parseHtml = do
 inlineHtml =
       singleton `fmap` emph
   <|> singleton `fmap` strong
-  <|> do { t <- anyHtmlTag
-          ; if selfClosing t then return [Str t] else inlinesTilEnd (extractTagType t)
-          }
+  <|> -- TODO: I'm not sure what the wisest way to deal with unrecognised HTML
+      -- is.  Right now, I just ignore the tags and return the content :-(
+     do { t <- anyHtmlTag
+        ; if selfClosing t then return [Str t] else inlinesTilEnd (extractTagType t)
+        }
 
 selfClosing t =
  case reverse t of

@@ -114,7 +114,7 @@ Pandoc (Meta {docTitle = [], docAuthors = [], docDate = []})
   , [ Plain [Str "set",Space,Str "membership:",Space,Str "\8712"] ]
   , [ Plain [Str "copyright:",Space,Str "\169"] ] ]
 , Para [Str "AT&T",Space,Str "has",Space,Str "an",Space,Str "ampersand",Space,Str "in",Space,Str "their",Space,Str "name.",Space,Str "AT&T",Space,Str "has",Space,Str "an",Space,Str "ampersand",Space,Str "in",Space,Str "their",Space,Str "name."]
-, Para [Str "This",Space,Str "&",Space,Str "that.",Space,Space,Str "This",Space,Str "&",Space,Str "that."]
+, Para [Str "This",Space,Str "&",Space,Str "that.",Space,Str "This",Space,Str "&",Space,Str "that."]
 , Para [Str "4",Space,Str "<",Space,Str "5.",Space,Str "4",Space,Str "<",Space,Str "5."]
 , Para [Str "6",Space,Str ">",Space,Str "5.",Space,Str "6",Space,Str ">",Space,Str "5."]
 , Para [Str "Backslash:",Space,Str "\\"]

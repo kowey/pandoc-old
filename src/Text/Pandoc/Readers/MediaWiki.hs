@@ -663,12 +663,12 @@ detectPara = concatMap detect . merge
   mkPara xs = case (concat . intersperse [Space] . filter (not.null) . treatLB $ xs) of
                 [] -> Nothing
                 xs -> Just (Para xs)
-  treatLB = map (dropWhile (== LineBreak))
+  treatLB = map stripWhiteSpace
   --
   splitLB = SP.split
           . SP.dropBlanks
           . SP.keepDelimsL
-          $ SP.oneOf [LineBreak]
+          $ SP.oneOf [LineBreak,Space]
   joinBack = groupBy innocentLB
   innocentLB _ (LineBreak:LineBreak:_) = False -- 2 or more = a new paragraph
   innocentLB _ _ = True

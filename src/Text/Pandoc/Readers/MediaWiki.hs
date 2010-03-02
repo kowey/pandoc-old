@@ -564,11 +564,14 @@ parseLocalLink = try $ doubleBracketed $ do
   return $ Link [Str l] (p, "")
 
 parseRemoteLink :: GenParser Char () Inline
-parseRemoteLink = try $ singleBracketed $ do
-  u <- uri
-  skipSpaces
-  l <- option u $ many1 (noneOf "]")
-  return $ Link [Str l] (u, "")
+parseRemoteLink = rawLink <|> brackLink
+ where
+  rawLink = try $ do { u <- uri; return (Link [] (u,"")) }
+  brackLink = try $ singleBracketed $ do
+    u <- uri
+    skipSpaces
+    l <- option u $ many1 (noneOf "]")
+    return $ Link [Str l] (u, "")
 
 parseImage :: GenParser Char () Inline
 parseImage = try $ doubleBracketed $ do

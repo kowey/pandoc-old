@@ -100,6 +100,7 @@ Pandoc (Meta {docTitle = [], docAuthors = [], docDate = []})
 tr "is",Space,Strong [Str "strong"],Str "."]
 , Para [Str "Mixed",Space,Str "markup",Emph [Str "emphasized",Space,Strong [Str "strong"],Str "continued",Space,Str "on",Space,Str "second",Space,Str "line"]]
 , TODO
+, Para [Str "This",Space,Str "is",Subscript [Str "subscripted"],Str "and",Space,Str "this",Space,Str "is",Superscript [Str "superscripted"],Str "."]
 , Header 1 [Str "Preformatted",Space,Str "Text"]
 , Para [Str "Native",Space,Str "preformatted",Space,Str "text:"]
 , TODO

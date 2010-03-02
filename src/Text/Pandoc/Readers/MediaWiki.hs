@@ -276,9 +276,7 @@ notReallyHtml =
  try $ do { char '<' ; spaces ; return [ Str "<", Space ] }
 
 inlineHtml =
-      singleton `fmap` emph
-  <|> singleton `fmap` strong
-  <|> singleton `fmap` ref
+      singleton `fmap` choice [ emph, strong, ref, subscript, superscript ]
   <|> -- TODO: I'm not sure what the wisest way to deal with unrecognised HTML
       -- is.  Right now, I just ignore the tags and return the content :-(
      do { t <- anyHtmlTag
@@ -299,6 +297,12 @@ emph = (betweenTags "em" <|> betweenTags "i") >>= return . Emph
 
 strong :: GenParser Char ParserState Inline
 strong = (betweenTags "b" <|> betweenTags "strong") >>= return . Strong
+
+subscript :: GenParser Char ParserState Inline
+subscript = Subscript `fmap` betweenTags "sub"
+
+superscript :: GenParser Char ParserState Inline
+superscript = Superscript `fmap` betweenTags "sup"
 
 ref :: GenParser Char ParserState Inline
 ref = (betweenTags "ref") >>= return . Note . singleton . Plain

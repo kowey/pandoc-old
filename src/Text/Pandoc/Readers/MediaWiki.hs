@@ -39,7 +39,7 @@ Conversion from MediaWiki to 'Pandoc' document.
 -}
 module Text.Pandoc.Readers.MediaWiki (readMediaWiki, test) where
 
-import Data.List ( groupBy )
+import Data.List ( intersperse, groupBy )
 import Data.Maybe ( mapMaybe )
 import qualified Data.List.Split as SP -- could be rewritten without
 
@@ -637,14 +637,10 @@ detectPara = concatMap detect . merge
   --
   detect (Plain xs) = mapMaybe mkPara . joinBack . splitLB $ xs
   detect xs = [xs]
-  mkPara xs = case concat (treatLB xs) of
+  mkPara xs = case (concat . intersperse [Space] . filter (not.null) . treatLB $ xs) of
                 [] -> Nothing
                 xs -> Just (Para xs)
-  treatLB [] = []
-  treatLB (l:ls) = dropWhile (== LineBreak) l : map treatLB' ls
-  treatLB' [LineBreak] = []
-  treatLB' (LineBreak:ys) = Space : ys
-  treatLB' ys = ys
+  treatLB = map (dropWhile (== LineBreak))
   --
   splitLB = SP.split
           . SP.dropBlanks

@@ -228,9 +228,7 @@ Left paren: (
 
 Right paren: )
 
-Greater-than: >
-
-Greater-than: &gt;
+Greater-than: > Greater-than: &gt;
 
 Hash: #
 

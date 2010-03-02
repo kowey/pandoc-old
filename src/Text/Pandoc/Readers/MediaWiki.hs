@@ -378,6 +378,7 @@ parseInlines delims = do
     parseInlineString :: Parser [Inline]
     parseInlineString = do
         inlines <- many $ choice [parseSpace,
+                                  charRef,
                                   parseImage,
                                   parseLocalLink, parseRemoteLink,
                                   parseEmDash, parseEnDash, parseEllipses,

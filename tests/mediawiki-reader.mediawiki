@@ -184,7 +184,7 @@ Native preformatted text:
  a '''space''' at the
  ''beginning'' of the line
 
-HTML performatted text with native parts:
+HTML preformatted text with native parts:
 
 <pre>preformatted text is done with
  a '''space''' at the

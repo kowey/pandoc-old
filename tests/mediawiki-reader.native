@@ -104,7 +104,7 @@ tr "is",Space,Strong [Str "strong"],Str "."]
 , Header 1 [Str "Preformatted",Space,Str "Text"]
 , Para [Str "Native",Space,Str "preformatted",Space,Str "text:"]
 , TODO
-, Para [Str "HTML",Space,Str "performatted",Space,Str "text",Space,Str "with",Space,Str "native",Space,Str "parts:"]
+, Para [Str "HTML",Space,Str "preformatted",Space,Str "text",Space,Str "with",Space,Str "native",Space,Str "parts:"]
 , TODO
 , Header 1 [Str "Special",Space,Str "characters"]
 , Para [Str "Here",Space,Str "is",Space,Str "some",Space,Str "unicode:"]

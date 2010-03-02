@@ -36,5 +36,9 @@ Pandoc (Meta {docTitle = [], docAuthors = [], docDate = []})
 , Header 1 [Str "Html"]
 , Null
 , Para [Str "hello",Emph [Str "foo",Space,Strong [Str "bar"],LineBreak,Str "quux"]]
-, Para [Note [Plain [Str "this",Space,Str "needs",Space,Str "the",Space,Str "Cite",Space,Str "plugin",Space,Str "used",Space,Str "on",Space,Str "wikipedia",Space,Link [Str "baz"] ("baz","")]]] ]
+, Para [Note [Plain [Str "this",Space,Str "needs",Space,Str "the",Space,Str "Cite",Space,Str "plugin",Space,Str "used",Space,Str "on",Space,Str "wikipedia",Space,Link [Str "baz"] ("baz","")]]]
+, Header 1 [Str "Special",Space,Str "characters"]
+, Para [Str "This",Space,Str "&",Space,Str "that"]
+, Para [Str "4",Space,Str "<",Space,Str "5"]
+, Para [Str "6",Space,Str ">",Space,Str "5"] ]
 

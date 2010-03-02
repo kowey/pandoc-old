@@ -258,6 +258,10 @@ parseHtml :: MWP Block
 parseHtml = do
   (htmlComment >> return Null)
   <|> Plain `fmap` inlineHtml
+  <|> Plain `fmap` notReallyHtml
+
+notReallyHtml =
+ try $ do { char '<' ; spaces ; return [ Str "<", Space ] }
 
 inlineHtml =
       singleton `fmap` emph

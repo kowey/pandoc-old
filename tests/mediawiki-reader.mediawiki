@@ -58,3 +58,11 @@ hello <em>foo '''bar'''
 quux</em>
 
 <ref>this needs the Cite plugin used on wikipedia [[baz]]</ref>
+
+= Special characters =
+
+This & that
+
+4 < 5
+
+6 > 5

@@ -39,7 +39,9 @@ Conversion from MediaWiki to 'Pandoc' document.
 -}
 module Text.Pandoc.Readers.MediaWiki (readMediaWiki, test) where
 
-import Data.List ( intersperse )
+import Data.List ( groupBy )
+import Data.Maybe ( mapMaybe )
+import qualified Data.List.Split as SP -- could be rewritten without
 
 import Text.Pandoc.Definition
 import Text.Pandoc.Shared 
@@ -72,7 +74,7 @@ parseMediaWiki :: MWP Pandoc
 parseMediaWiki = do
     let meta = Meta [] [] []
     blocks <- many parseBlock
-    return $ Pandoc meta $ mergePlain blocks
+    return $ Pandoc meta $ detectPara blocks
 
 -- | Parse a Pandoc block.
 -- A block can either be a
@@ -613,18 +615,31 @@ stringWithBrackets delims stop = helper False
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 -- * Utility funcions
 
-mergePlain :: [Block] -> [Block]
-mergePlain [] = []
-mergePlain (Plain [LineBreak] : bs) = mergePlain bs
-mergePlain (Plain i : bs) = para : mergePlain bs2
+detectPara :: [Block] -> [Block]
+detectPara = concatMap detect . merge
  where
-   para = Para . concat . intersperse [ Space ] $ inlines
-   (inlines,bs2) = takeLB [i] bs
-mergePlain (b:bs)          = b : mergePlain bs
-
-takeLB acc bs@(Plain [LineBreak] : Plain [LineBreak] : _) = (reverse acc, bs)
-takeLB acc (Plain [LineBreak] : Plain p : bs) = takeLB (p : acc) bs
-takeLB acc xs = (reverse acc, xs)
+  merge [] = []
+  merge (Plain xs : Plain ys : bs) = merge (Plain (xs ++ ys) : bs)
+  merge (b:bs) = b : merge bs
+  --
+  detect (Plain xs) = mapMaybe mkPara . joinBack . splitLB $ xs
+  detect xs = [xs]
+  mkPara xs = case concat (treatLB xs) of
+                [] -> Nothing
+                xs -> Just (Para xs)
+  treatLB [] = []
+  treatLB (l:ls) = dropWhile (== LineBreak) l : map treatLB' ls
+  treatLB' [LineBreak] = []
+  treatLB' (LineBreak:ys) = Space : ys
+  treatLB' ys = ys
+  --
+  splitLB = SP.split
+          . SP.dropBlanks
+          . SP.keepDelimsL
+          $ SP.oneOf [LineBreak]
+  joinBack = groupBy innocentLB
+  innocentLB _ (LineBreak:LineBreak:_) = False -- 2 or more = a new paragraph
+  innocentLB _ _ = True
 
 -- | A singleton list of a given element if a condition holds, empty otherwise.
 listIf :: Bool      -- ^ If this holds, then...

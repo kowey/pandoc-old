@@ -20,25 +20,135 @@ Pandoc (Meta {docTitle = [], docAuthors = [], docDate = []})
 , HorizontalRule
 , Para [Str "Another:"]
 , HorizontalRule
-, Header 1 [Str "Links"]
+, Header 1 [Str "Block",Space,Str "Quotes"]
+, Header 2 [Str "Native",Space,Str "BlockQuotes"]
+, Header 2 [Str "HTML",Space,Str "BlockQuotes"]
+, Para [Str "Here",Apostrophe,Str "s",Space,Str "a",Space,Str "block",Space,Str "quote:"]
+, Para [Str "Here",Apostrophe,Str "s",Space,Str "another,",Space,Str "differently",Space,Str "indented:"]
+, TODO
+, Header 1 [Str "Lists"]
+, Header 2 [Str "Unordered"]
 , BulletList
-  [ [ Plain [Link [Str "Simple intra"] ("Simple intra","")] ]
-  , [ Plain [Link [Str "Simple intra ' 2"] ("Simple intra ' 2","")] ]
-  , [ Plain [Link [Str "Foo"] ("Intra","")] ]
-  , [ Plain [Str "Some",Space,Str "text",Space,Str "(",Link [Str "Link in parentheses"] ("Link in parentheses",""),Str ")"] ]
-  , [ Plain [Link [] ("http://example.com/bar","")] ]
-  , [ Plain [Link [Str "bar"] ("http://example.com/foo","")] ]
-  , [ Plain [Image [] ("foo bar","")] ]
-  , [ Plain [Image [Str "cap"] ("foo bar","")] ]
-  , [ Plain [Image [Str "cap",Apostrophe] ("foo bar","")] ]
-  , [ Plain [Image [Str "cap"] ("foo bar","")] ]
-  , [ Plain [Image [Link [Str "caption"] ("caption",""),Space,Str "with",Space,Link [Str "link"] ("fancy links","")] ("foo","")] ] ]
-, Header 1 [Str "Html"]
+  [ [ Plain [Str "asterisk",Space,Str "1"] ]
+  , [ Plain [Str "asterisk",Space,Str "2"] ]
+  , [ Plain [Str "asterisk",Space,Str "3"] ] ]
+, Header 2 [Str "Ordered"]
+, OrderedList (1,Decimal,Period)
+  [ [ Plain [Str "First"] ]
+  , [ Plain [Str "Second"] ]
+  , [ Plain [Str "Third"] ] ]
+, Header 2 [Str "Multiple",Space,Str "paragraphs",Space,Str "HTML"]
+, Para [Str "Multiple",Space,Str "paragraphs:"]
+, TODO
+, Header 2 [Str "Nested"]
+, BulletList
+  [ [ Plain [Str "Tab"] ]
+  , [ BulletList
+      [ [ Plain [Str "Tab"] ]
+      , [ BulletList
+          [ [ Plain [Str "Tab"] ]
+         ] ] ] ] ]
+, Para [Str "Here",Apostrophe,Str "s",Space,Str "another:"]
+, OrderedList (1,Decimal,Period)
+  [ [ Para [Str "First"] ]
+  , [ Para [Str "Second:"]
+    , BlockQuote
+      [ BulletList
+        [ [ Plain [Str "Fee"] ]
+        , [ Plain [Str "Fie"] ]
+        , [ Plain [Str "Foe"] ] ] ] ], [ Para [Str "Third"] ] ]
+, Header 1 [Str "Definitions"]
+, Header 2 [Str "Native",Space,Str "definitions"]
+, DefinitionList
+  [ ([Str "term",Space,Str "1"],
+     [ [ Plain [Str "Definition",Space,Str "1."] ]
+     ])
+  , ([Str "term",Space,Str "2"],
+     [ [ Plain [Str "Definition",Space,Str "2"] ]
+     ])
+  , ([Str "term",Space,Str "with",Space,Emph [Str "emphasis"]],
+     [ [ Plain [Str "Definition",Space,Str "3."] ]
+     ]) ]
+, Header 2 [Str "Definitions",Space,Str "in",Space,Str "HTML"]
+, TODO
+, Header 2 [Str "Field",Space,Str "Lists"]
+, DefinitionList
+  [ ([Str "address"],
+     [ [ Plain [Str "61",Space,Str "Main",Space,Str "St."] ]
+     ])
+  , ([Str "city"],
+     [ [ Plain [Emph [Str "Nowhere"],Str ",",Space,Str "MA,",Space,Str "USA"] ]
+     ])
+  , ([Str "phone"],
+     [ [ Plain [Str "123-4567"] ]
+     ]) ]
+, DefinitionList
+  [ ([Str "address"],
+     [ [ Plain [Str "61",Space,Str "Main",Space,Str "St."] ]
+     ])
+  , ([Str "city"],
+     [ [ Plain [Emph [Str "Nowhere"],Str ",",Space,Str "MA,",Space,Str "USA"] ]
+     ])
+  , ([Str "phone"],
+     [ [ Plain [Str "123-4567"] ]
+     ]) ]
+, Header 1 [Str "HTML",Space,Str "blocks"]
 , Null
-, Para [Str "hello",Emph [Str "foo",Space,Strong [Str "bar"],LineBreak,Str "quux"]]
-, Para [Note [Plain [Str "this",Space,Str "needs",Space,Str "the",Space,Str "Cite",Space,Str "plugin",Space,Str "used",Space,Str "on",Space,Str "wikipedia",Space,Link [Str "baz"] ("baz","")]]]
+, TODO
+, Header 1 [Str "Inline",Space,Str "Markup"]
+, Para [Str "This",Space,Str "is",Space,Emph [Str "emphasized"],Str ".",Space,Str "This",Space,S
+tr "is",Space,Strong [Str "strong"],Str "."]
+, Para [Str "Mixed",Space,Str "markup",Emph [Str "emphasized",Space,Strong [Str "strong"],Str "continued",Space,Str "on",Space,Str "second",Space,Str "line"]]
+, TODO
+, Header 1 [Str "Preformatted",Space,Str "Text"]
+, Para [Str "Native",Space,Str "preformatted",Space,Str "text:"]
+, TODO
+, Para [Str "HTML",Space,Str "performatted",Space,Str "text",Space,Str "with",Space,Str "native",Space,Str "parts:"]
+, TODO
 , Header 1 [Str "Special",Space,Str "characters"]
-, Para [Str "This",Space,Str "&",Space,Str "that"]
-, Para [Str "4",Space,Str "<",Space,Str "5"]
-, Para [Str "6",Space,Str ">",Space,Str "5"] ]
+, Para [Str "Here",Space,Str "is",Space,Str "some",Space,Str "unicode:"]
+, BulletList
+  [ [ Plain [Str "I",Space,Str "hat:",Space,Str "\206"] ]
+  , [ Plain [Str "o",Space,Str "umlaut:",Space,Str "\246"] ]
+  , [ Plain [Str "section:",Space,Str "\167"] ]
+  , [ Plain [Str "set",Space,Str "membership:",Space,Str "\8712"] ]
+  , [ Plain [Str "copyright:",Space,Str "\169"] ] ]
+, Para [Str "AT&T",Space,Str "has",Space,Str "an",Space,Str "ampersand",Space,Str "in",Space,Str "their",Space,Str "name."]
+, Para [Str "This",Space,Str "&",Space,Str "that."]
+, Para [Str "4",Space,Str "<",Space,Str "5.",Space,Str "4",Space,Str "<",Space,Str "5."]
+, Para [Str "6",Space,Str ">",Space,Str "5.",Space,Str "6",Space,Str ">",Space,Str "5."]
+, Para [Str "Backslash:",Space,Str "\\"]
+, Para [Str "Backtick:",Space,Str "`"]
+, Para [Str "Asterisk:",Space,Str "*"]
+, Para [Str "Underscore:",Space,Str "_"]
+, Para [Str "Left",Space,Str "brace:",Space,Str "{"]
+, Para [Str "Right",Space,Str "brace:",Space,Str "}"]
+, Para [Str "Left",Space,Str "bracket:",Space,Str "["]
+, Para [Str "Right",Space,Str "bracket:",Space,Str "]"]
+, Para [Str "Left",Space,Str "paren:",Space,Str "("]
+, Para [Str "Right",Space,Str "paren:",Space,Str ")"]
+, Para [Str "Greater-than:",Space,Str ">"]
+, Para [Str "Hash:",Space,Str "#"]
+, Para [Str "Period:",Space,Str "."]
+, Para [Str "Bang:",Space,Str "!"]
+, Para [Str "Plus:",Space,Str "+"]
+, Para [Str "Minus:",Space,Str "-"]
+, Header 1 [Str "Links"]
+, Para [Str "URL",Space,Str "with",Space,Str "link",Space,Str "text:",Space,Link [Str "bar"] ("http://example.com/foo","")]
+, Para [Str "Internal",Space,Str "link:",Space,Link [Str "Simple intra"] ("Simple intra","")]
+, Para [Str "Tricky",Space,Str "internal",Space,Str "link:",Space,Link [Str "Simple intra ' 2"] ("Simple intra ' 2","")]
+, Para [Str "(",Link [Str "Link in parentheses"] ("Link in parentheses",""),Str ")"]
+, Para [Str "Internal",Space,Str "link",Space,Str "with",Space,Str "link",Space,Str "text:",Space,Link [Str "Foo"] ("Intra","")]
+, TODO
+, Header 1 [Str "Images"]
+, Para [Str "From",Space,Str "\"Voyage",Space,Str "dans",Space,Str "la",Space,Str "Lune\"",Space,Str "by",Space,Str "Georges",Space,Str "Melies",Space,Str "(1902):"]
+, Para [Image [Str "image"] ("lalune.jpg","")]
+, Para [Image [Str "Voyage",Space,Str "dans",Space,Str "la",Space,Str "Lune"] ("lalune.jpg","")]
+, Para [Str "Here",Space,Str "is",Space,Str "a",Space,Str "movie",Space,Image [Str "movie"] ("movie.jpg",""),Space,Str "icon."]
+, Header 1 [Str "Line",Space,Str "Blocks"]
+, TODO
+, Header 1 [Str "Simple",Space,Str "Tables"]
+, TODO
+, Header 1 [Str "Special",Space,Str "Extensions"]
+, Para [Note [Plain [Str "this",Space,Str "needs",Space,Str "the",Space,Str "Cite",Space,Str "plugin",Space,Str "used",Space,Str "on",Space,Str "wikipedia",Space,Link [Str "baz"] ("baz","")]]] ]
 

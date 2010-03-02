@@ -36,33 +36,249 @@ Another:
 
 ------------
 
-= Links =
+= Block Quotes =
 
-* [[Simple intra]]
-* [[Simple intra ' 2]]
-* [[Intra | Foo]]
-* Some text ([[Link in parentheses]])
-* http://example.com/bar
-* [http://example.com/foo bar]
-* [[Image:foo bar]]
-* [[Image:foo bar|cap]]
-* [[Image:foo bar|cap']]
-* [[Image:foo bar|quux mah mah|cap]]
-* [[Image:foo|thumb|400px|right|[[caption]] with [[fancy links|link]]]]
+== Native BlockQuotes ==
 
-= Html =
+== HTML BlockQuotes ==
 
-<!-- comments get ignored -->
+Here's a block quote:
 
-hello <em>foo '''bar'''
-quux</em>
+<blockquote>This is a block quote. It is pretty short.
+</blockquote>
+Here's another, differently indented:
 
-<ref>this needs the Cite plugin used on wikipedia [[baz]]</ref>
+<blockquote>This is a block quote. It's indented with a tab.
+
+Code in a block quote:
+
+<pre>sub status {
+    print &quot;working&quot;;
+}</pre>
+List in a block quote:
+
+# item one
+# item two
+
+Nested block quotes:
+
+<blockquote>nested
+
+<blockquote>nested
+</blockquote></blockquote></blockquote>
+
+= Lists =
+
+== Unordered ==
+
+* asterisk 1
+* asterisk 2
+* asterisk 3
+
+== Ordered ==
+
+# First
+# Second
+# Third
+
+== Multiple paragraphs HTML ==
+
+Multiple paragraphs:
+
+<ol style="list-style-type: decimal;">
+<li><p>Item 1, graf one.</p>
+<p>Item 1. graf two. The quick brown fox jumped over the lazy dog's back.</p></li>
+<li><p>Item 2.</p></li>
+<li><p>Item 3.</p></li></ol>
+
+== Nested ==
+
+* Tab
+** Tab
+*** Tab
+
+Here's another:
+
+<ol style="list-style-type: decimal;">
+<li><p>First</p></li>
+<li><p>Second:</p>
+<blockquote><ul>
+<li>Fee</li>
+<li>Fie</li>
+<li>Foe</li></ul>
+</blockquote></li>
+<li><p>Third</p></li></ol>
+
+= Definitions =
+
+== Native definitions ==
+
+;term 1
+:Definition 1.
+;term 2
+:Definition 2
+;term with ''emphasis''
+:Definition 3.
+
+== Definitions in HTML ==
+
+<dl>
+<dt>term 1</dt>
+<dd><p>Definition 1.</p></dd>
+<dt>term 2</dt>
+<dd><p>Definition 2, paragraph 1.</p>
+<p>Definition 2, paragraph 2.</p></dd>
+<dt>term with ''emphasis''</dt>
+<dd><p>Definition 3.</p></dd></dl>
+
+== Field Lists ==
+
+; address
+: 61 Main St.
+; city
+: ''Nowhere'', MA, USA
+; phone
+: 123-4567
+
+; address
+: 61 Main St.
+; city
+: ''Nowhere'', MA, USA
+; phone
+: 123-4567
+
+= HTML blocks =
+
+<!-- HTML comments get ignored -->
+
+Simple block on one line:
+
+<div>foo</div>
+
+Now, nested:
+
+<div>
+    <div>
+        <div>
+            foo
+        </div>
+    </div>
+</div>
+
+= Inline Markup =
+
+This is ''emphasized''. This is '''strong'''.
+
+Mixed markup <em>emphasized '''strong'''
+continued on second line</em>
+
+This is code: <tt>&gt;</tt>, <tt>$</tt>, <tt>\</tt>, <tt>\$</tt>, <tt>&lt;html&gt;</tt>.
+
+This is<sub>subscripted</sub> and this is <sup>superscripted</sup>.
+
+= Preformatted Text =
+
+Native preformatted text:
+
+ preformatted text is done with
+ a '''space''' at the
+ ''beginning'' of the line
+
+HTML performatted text with native parts:
+
+<pre>preformatted text is done with
+ a '''space''' at the
+ ''beginning'' of the line</pre>
 
 = Special characters =
 
-This & that
+Here is some unicode:
 
-4 < 5
+* I hat: Î
+* o umlaut: ö
+* section: §
+* set membership: ∈
+* copyright: ©
 
-6 > 5
+AT&T has an ampersand in their name.  AT&amp;T has an ampersand in their name.
+
+This & that.  This &amp; that.
+
+4 < 5. 4 &lt; 5.
+
+6 > 5. 6 &gt; 5.
+
+Backslash: \
+
+Backtick: `
+
+<!-- Asterisk: * -->
+
+Underscore: _
+
+<!-- Left bracket: [ -->
+
+<!-- Right bracket: ] -->
+
+Left brace: {
+
+Right brace: }
+
+Left paren: (
+
+Right paren: )
+
+Greater-than: >
+
+Greater-than: &gt;
+
+Hash: #
+
+Period: .
+
+Bang: !
+
+Plus: +
+
+Minus: -
+
+= Links =
+
+URL with link text: [http://example.com/foo bar]
+
+Internal link: [[Simple intra]]
+
+Tricky internal link: [[Simple intra ' 2]]
+
+([[Link in parentheses]])
+
+Internal link with link text: [[Intra | Foo]]
+
+Here's a [http://example.com/?foo=1&bar=2 link with an ampersand in the URL].
+
+Here's a link with an ampersand in the link text: [http://example.com/url/ AT&T].
+
+Autolinks: http://example.com/?foo=1&amp;bar=2 and nobody@nowhere.net
+
+But not here:
+
+<pre>http://example.com/</pre>
+
+= Images =
+
+From "Voyage dans la Lune" by Georges Melies (1902):
+
+[[Image:lalune.jpg|image]]
+
+[[Image:lalune.jpg|Voyage dans la Lune]]
+
+Here is a movie [[Image:movie.jpg|movie]] icon.
+
+= Line Blocks =
+
+= Simple Tables =
+
+= Special Extensions =
+
+<ref>this needs the Cite plugin used on wikipedia [[baz]]</ref>
+

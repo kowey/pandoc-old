@@ -53,6 +53,18 @@ import Text.Pandoc.Readers.HTML ( rawHtmlBlock, anyHtmlBlockTag,
                                   htmlAttribute,
                                   htmlBlockElement, htmlComment, unsanitaryURI )
 
+-- TODO:
+--
+-- * use MediaWiki's own test suite, see maintenance/parserTests.php
+--   [I don't know how to turn that into a test suite yet]
+--
+-- * table support (see stringWithBrackets for elements inside tables)
+--
+-- * better HTML support (the trickiness is that HTML/Mediawiki bits
+--   can be interleaved, eg. == <foo>'''bar'''</foo> ==
+--
+-- * general bugfixes (see test case)
+
 type MWP a = GenParser Char ParserState a
 
 test :: String -> Pandoc

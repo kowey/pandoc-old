@@ -85,7 +85,7 @@ Nested block quotes:
 
 Multiple paragraphs:
 
-<ol style="list-style-type: decimal;">
+<ol>
 <li><p>Item 1, graf one.</p>
 <p>Item 1. graf two. The quick brown fox jumped over the lazy dog's back.</p></li>
 <li><p>Item 2.</p></li>
@@ -99,7 +99,7 @@ Multiple paragraphs:
 
 Here's another:
 
-<ol style="list-style-type: decimal;">
+<ol>
 <li><p>First</p></li>
 <li><p>Second:</p>
 <blockquote><ul>

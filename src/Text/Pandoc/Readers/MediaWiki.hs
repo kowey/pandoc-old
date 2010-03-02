@@ -43,6 +43,7 @@ import Data.List ( intersperse, groupBy )
 import Data.Maybe ( mapMaybe )
 import qualified Data.List.Split as SP -- could be rewritten without
 
+import Text.Pandoc.CharacterReferences ( characterReference )
 import Text.Pandoc.Definition
 import Text.Pandoc.Shared 
 import Text.ParserCombinators.Parsec
@@ -383,14 +384,13 @@ parseInlines delims = do
     parseInlineString :: Parser [Inline]
     parseInlineString = do
         inlines <- many $ choice [parseSpace,
-                                  charRef,
                                   parseImage,
                                   parseLocalLink, parseRemoteLink,
                                   parseEmDash, parseEnDash, parseEllipses,
                                   parseLineBreak, parseApostrophe, parseString]
         return inlines
 
-    okSingletons    = "-."
+    okSingletons    = "-.&"
     specialChars    = " \n\'[" ++ okSingletons
     parseSpace      = do { char ' '; return Space }
     parseEmDash     = do { try $ count 3 $ char '-'; return EmDash }
@@ -400,6 +400,7 @@ parseInlines delims = do
     parseApostrophe = do { char '\''; return Apostrophe }
     parseString     = (Str . concat) `fmap` many1 parseStringChunk
     parseStringChunk = do { str <- many1 $ noneOf specialChars; return str }
+                     <|> (singleton `fmap` characterReference)
                      <|> do { singleton `fmap` oneOf okSingletons }
 
 singleton :: a -> [a]

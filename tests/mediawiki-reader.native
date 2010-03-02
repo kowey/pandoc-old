@@ -96,8 +96,7 @@ Pandoc (Meta {docTitle = [], docAuthors = [], docDate = []})
 , Null
 , TODO
 , Header 1 [Str "Inline",Space,Str "Markup"]
-, Para [Str "This",Space,Str "is",Space,Emph [Str "emphasized"],Str ".",Space,Str "This",Space,S
-tr "is",Space,Strong [Str "strong"],Str "."]
+, Para [Str "This",Space,Str "is",Space,Emph [Str "emphasized"],Str ".",Space,Str "This",Space,Str "is",Space,Strong [Str "strong"],Str "."]
 , Para [Str "Mixed",Space,Str "markup",Emph [Str "emphasized",Space,Strong [Str "strong"],Str "continued",Space,Str "on",Space,Str "second",Space,Str "line"]]
 , TODO
 , Para [Str "This",Space,Str "is",Subscript [Str "subscripted"],Str "and",Space,Str "this",Space,Str "is",Superscript [Str "superscripted"],Str "."]

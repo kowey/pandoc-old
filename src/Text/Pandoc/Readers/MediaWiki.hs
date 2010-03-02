@@ -262,6 +262,7 @@ parseHtml = do
 inlineHtml =
       singleton `fmap` emph
   <|> singleton `fmap` strong
+  <|> singleton `fmap` ref
   <|> -- TODO: I'm not sure what the wisest way to deal with unrecognised HTML
       -- is.  Right now, I just ignore the tags and return the content :-(
      do { t <- anyHtmlTag
@@ -282,6 +283,9 @@ emph = (betweenTags "em" <|> betweenTags "i") >>= return . Emph
 
 strong :: GenParser Char ParserState Inline
 strong = (betweenTags "b" <|> betweenTags "strong") >>= return . Strong
+
+ref :: GenParser Char ParserState Inline
+ref = (betweenTags "ref") >>= return . Note . singleton . Plain
 
 -- | Read inlines until end tag.
 inlinesTilEnd :: String -> GenParser Char ParserState [Inline]

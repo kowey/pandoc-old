@@ -166,7 +166,7 @@ parseList ctor itemChar = do
     parseListItem :: MWP (Int, [Block])
     parseListItem = do
         listSymbols <- (many1 $ char itemChar) <?> "List item"
-        content <- parsePlain <|> return Null -- TODO: expand to more things available in lists
+        content <- parsePlainWithin <|> return Null -- TODO: expand to more things available in lists
         endOfLine -- Consume end of this list item
         return (length listSymbols, [content])
 
@@ -333,6 +333,11 @@ htmlOpenTag tag = try $ do
 -- | Parse a plain text elements, i.e. a series of Inline terminated by a newline.
 parsePlain :: MWP Block
 parsePlain = do
+    inlines <- parseInlines "\n<" -- stop at newline or html start
+    return $ Plain inlines
+
+parsePlainWithin :: MWP Block
+parsePlainWithin = do
     inlines <- parseInlines "\n<" -- stop at newline or html start
     return $ Plain $ stripSpaces inlines
 

@@ -256,7 +256,7 @@ Here's a [http://example.com/?foo=1&bar=2 link with an ampersand in the URL].
 
 Here's a link with an ampersand in the link text: [http://example.com/url/ AT&T].
 
-Autolinks: http://example.com/?foo=1&amp;bar=2 and nobody@nowhere.net
+Autolinks: http://example.com/?foo=1&amp;bar=2
 
 But not here:
 

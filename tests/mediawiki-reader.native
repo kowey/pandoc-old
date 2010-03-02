@@ -142,6 +142,8 @@ tr "is",Space,Strong [Str "strong"],Str "."]
 , Para [Str "Internal",Space,Str "link",Space,Str "with",Space,Str "link",Space,Str "text:",Space,Link [Str "Foo"] ("Intra","")]
 , Para [Str "Here",Apostrophe,Str "s",Space,Str "a",Space,Link [Str "link with an ampersand in the URL"] ("http://example.com/?foo=1&bar=2",""),Str "."]
 , Para [Str "Here",Apostrophe,Str "s",Space,Str "a",Space,Str "link",Space,Str "with",Space,Str "an",Space,Str "ampersand",Space,Str "in",Space,Str "the",Space,Str "link",Space,Str "text:",Space,Link [Str "AT&T"] ("http://example.com/url/",""),Str "."]
+, Para [Str "Autolinks:",Space,Link [] ("http://example.com/?foo=1&amp;bar=2","")]
+, Para [Str "But",Space,Str "not",Space,Str "here:"]
 , TODO
 , Header 1 [Str "Images"]
 , Para [Str "From",Space,Str "\"Voyage",Space,Str "dans",Space,Str "la",Space,Str "Lune\"",Space,Str "by",Space,Str "Georges",Space,Str "Melies",Space,Str "(1902):"]

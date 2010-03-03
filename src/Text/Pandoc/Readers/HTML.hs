@@ -35,7 +35,7 @@ module Text.Pandoc.Readers.HTML (
                                  anyHtmlInlineTag,  
                                  anyHtmlTag,
                                  anyHtmlEndTag,
-                                 htmlTag,
+                                 htmlTag, htmlOpenTag, htmlSelfClosingTag,
                                  htmlEndTag,
                                  extractTagType,
                                  htmlBlockElement,
@@ -261,16 +261,33 @@ anyHtmlEndTag = try $ do
      else return result 
 
 htmlTag :: String -> GenParser Char ParserState (String, [(String, String)])
-htmlTag tag = try $ do
+htmlTag = htmlTagHelper Nothing
+
+-- | Self-closing not permitted
+htmlOpenTag :: String -> GenParser Char ParserState (String, [(String, String)])
+htmlOpenTag = htmlTagHelper (Just False)
+
+-- | Self-closing mandatory
+htmlSelfClosingTag :: String -> GenParser Char ParserState (String, [(String, String)])
+htmlSelfClosingTag = htmlTagHelper (Just True)
+
+htmlTagHelper :: Maybe Bool -- ^ Nothing for optional self-closing, Just otherwise
+              -> String
+              -> GenParser Char ParserState (String, [(String, String)])
+htmlTagHelper mSelfClosing tag = try $ do
   char '<'
   spaces
   stringAnyCase tag
   attribs <- many htmlAttribute
   spaces
-  optional (string "/")
-  spaces
+  case mSelfClosing of
+    Nothing    -> optional selfClose
+    Just True  -> selfClose
+    Just False -> return ()
   char '>'
   return (tag, (map (\(name, content, _) -> (name, content)) attribs))
+ where
+  selfClose = string "/" >> spaces
 
 -- parses a quoted html attribute value
 quoted :: Char -> GenParser Char st (String, String)

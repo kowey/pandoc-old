@@ -49,7 +49,8 @@ import Text.Pandoc.Shared
 import Text.ParserCombinators.Parsec
 
 import Text.Pandoc.Readers.HTML ( rawHtmlBlock, anyHtmlBlockTag, 
-                                  anyHtmlInlineTag, anyHtmlTag, htmlTag,
+                                  anyHtmlInlineTag, anyHtmlTag,
+                                  htmlTag, htmlOpenTag, htmlSelfClosingTag,
                                   anyHtmlEndTag, htmlEndTag, extractTagType,
                                   htmlAttribute,
                                   htmlBlockElement, htmlComment, unsanitaryURI )
@@ -316,18 +317,6 @@ inlinesTilEnd tag =
                          <|> do { char '\n' >> return [LineBreak] } 
                         ) (htmlEndTag tag)
 
--- no self-closing here, thanks
-htmlOpenTag :: String -> GenParser Char ParserState (String, [(String, String)])
-htmlOpenTag tag = try $ do
-  char '<'
-  spaces
-  stringAnyCase tag
-  attribs <- many htmlAttribute
-  spaces
-  spaces
-  char '>'
-  return (tag, (map (\(name, content, _) -> (name, content)) attribs))
- 
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -
 -- ** Parsing Text
 

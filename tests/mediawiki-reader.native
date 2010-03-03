@@ -97,9 +97,9 @@ Pandoc (Meta {docTitle = [], docAuthors = [], docDate = []})
 , TODO
 , Header 1 [Str "Inline",Space,Str "Markup"]
 , Para [Str "This",Space,Str "is",Space,Emph [Str "emphasized"],Str ".",Space,Str "This",Space,Str "is",Space,Strong [Str "strong"],Str "."]
-, Para [Str "Mixed",Space,Str "markup",Emph [Str "emphasized",Space,Strong [Str "strong"],Str "continued",Space,Str "on",Space,Str "second",Space,Str "line"]]
 , TODO
-, Para [Str "This",Space,Str "is",Subscript [Str "subscripted"],Str "and",Space,Str "this",Space,Str "is",Superscript [Str "superscripted"],Str "."]
+, Para [Str "Mixed",Space,Str "markup",Space,Emph [Str "emphasized",Space,Strong [Str "strong"],Space,Str "continued",Space,Str "on",Space,Str "second",Space,Str "line"]]
+, Para [Str "This",Space,Str "is",Subscript [Str "subscripted"],Space,Str "and",Space,Str "this",Space,Str "is",Space,Superscript [Str "superscripted"],Str "."]
 , Header 1 [Str "Preformatted",Space,Str "Text"]
 , Para [Str "Native",Space,Str "preformatted",Space,Str "text:"]
 , TODO
@@ -121,10 +121,10 @@ Pandoc (Meta {docTitle = [], docAuthors = [], docDate = []})
 , Para [Str "Backtick:",Space,Str "`"]
 , Para [Str "Asterisk:",Space,Str "*"]
 , Para [Str "Underscore:",Space,Str "_"]
-, Para [Str "Left",Space,Str "brace:",Space,Str "{"]
-, Para [Str "Right",Space,Str "brace:",Space,Str "}"]
 , Para [Str "Left",Space,Str "bracket:",Space,Str "["]
 , Para [Str "Right",Space,Str "bracket:",Space,Str "]"]
+, Para [Str "Left",Space,Str "brace:",Space,Str "{"]
+, Para [Str "Right",Space,Str "brace:",Space,Str "}"]
 , Para [Str "Left",Space,Str "paren:",Space,Str "("]
 , Para [Str "Right",Space,Str "paren:",Space,Str ")"]
 , Para [Str "Greater-than:",Space,Str ">",Space,Str "Greater-than:",Space,Str ">"]

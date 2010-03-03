@@ -127,7 +127,7 @@ parseHeader = do
 
 -- | Parse a horizontal line
 parseHorizontalRule :: MWP Block
-parseHorizontalRule = do
+parseHorizontalRule = try $ do
     count 4 (char '-') >> skipMany (char '-') <?> "Horizontal rule"
     return HorizontalRule
 

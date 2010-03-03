@@ -162,6 +162,8 @@ Here's another:
 
 <!-- HTML comments get ignored -->
 
+<em><!-- HTML comments in HTML get ignored --></em>
+
 <!-- TODO
 Simple block on one line:
 

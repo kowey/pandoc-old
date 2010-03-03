@@ -95,6 +95,7 @@ Pandoc (Meta {docTitle = [], docAuthors = [], docDate = []})
      ]) ]
 , Header 1 [Str "HTML",Space,Str "blocks"]
 , Null
+, Para [Emph []]
 , TODO HTML div blocks
 , Header 1 [Str "Inline",Space,Str "Markup"]
 , Para [Str "This",Space,Str "is",Space,Emph [Str "emphasized"],Str ".",Space,Str "This",Space,Str "is",Space,Strong [Str "strong"],Str "."]

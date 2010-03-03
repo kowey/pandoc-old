@@ -316,6 +316,7 @@ inlinesTilEnd tag =
  concat `fmap` manyTill (inlineHtml
                          <|> parseInlines "\n<"
                          <|> do { char '\n'; return [Space] }
+                         <|> do { htmlComment; return [] }
                         ) (htmlEndTag tag)
 
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -

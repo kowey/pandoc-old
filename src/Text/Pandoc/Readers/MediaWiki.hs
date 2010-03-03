@@ -307,7 +307,8 @@ superscript :: GenParser Char ParserState Inline
 superscript = Superscript `fmap` betweenTags "sup"
 
 ref :: GenParser Char ParserState Inline
-ref = (betweenTags "ref") >>= return . Note . singleton . Plain
+ref =   ((Note . singleton . Plain) `fmap` betweenTags "ref")
+    <|> (htmlSelfClosingTag "ref" >> return (Note [])) -- TODO what's the significance of self-closing tags?
 
 -- | Read inlines until end tag.
 inlinesTilEnd :: String -> GenParser Char ParserState [Inline]

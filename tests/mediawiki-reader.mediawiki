@@ -303,3 +303,4 @@ Here is a movie [[Image:movie.jpg|movie]] icon.
 
 <ref>this needs the Cite plugin used on wikipedia [[baz]]</ref>
 
+<ref/>-

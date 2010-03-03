@@ -155,5 +155,6 @@ Pandoc (Meta {docTitle = [], docAuthors = [], docDate = []})
 , Header 1 [Str "Simple",Space,Str "Tables"]
 , TODO Tables
 , Header 1 [Str "Special",Space,Str "Extensions"]
-, Para [Note [Plain [Str "this",Space,Str "needs",Space,Str "the",Space,Str "Cite",Space,Str "plugin",Space,Str "used",Space,Str "on",Space,Str "wikipedia",Space,Link [Str "baz"] ("baz","")]]] ]
+, Para [Note [Plain [Str "this",Space,Str "needs",Space,Str "the",Space,Str "Cite",Space,Str "plugin",Space,Str "used",Space,Str "on",Space,Str "wikipedia",Space,Link [Str "baz"] ("baz","")]]]
+, Para [Note [],Str "-"] ]
 

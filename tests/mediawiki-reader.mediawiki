@@ -237,9 +237,9 @@ Asterisk: *
 
 Underscore: _
 
-<!-- Left bracket: [ -->
+Left bracket: [
 
-<!-- Right bracket: ] -->
+Right bracket: ]
 
 Left brace: {
 

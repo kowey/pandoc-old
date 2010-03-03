@@ -191,7 +191,9 @@ This is code: <code>&gt;</code>, <code>$</code>, <code>\</code>, <code>$</code>,
 This is not code, but HTML: <tt>&gt;</tt>, <tt>$</tt>, <tt>\</tt>, <tt>\$</tt>, <tt>&lt;html&gt;</tt>.
 -->
 
-This is<sub>subscripted</sub> and this is <sup>superscripted</sup>.
+This is <sub>subscripted</sub> and this is <sup>superscripted</sup>.
+
+Lack of spaces<b>preserved too</b> <i>eh?</i>
 
 = Preformatted Text =
 

@@ -100,7 +100,8 @@ Pandoc (Meta {docTitle = [], docAuthors = [], docDate = []})
 , Para [Str "This",Space,Str "is",Space,Emph [Str "emphasized"],Str ".",Space,Str "This",Space,Str "is",Space,Strong [Str "strong"],Str "."]
 , Para [Str "Mixed",Space,Str "markup",Space,Emph [Str "emphasized",Space,Strong [Str "strong"],Space,Str "continued",Space,Str "on",Space,Str "second",Space,Str "line"]]
 , TODO code vs tt
-, Para [Str "This",Space,Str "is",Subscript [Str "subscripted"],Space,Str "and",Space,Str "this",Space,Str "is",Space,Superscript [Str "superscripted"],Str "."]
+, Para [Str "This",Space,Str "is",Space,Subscript [Str "subscripted"],Space,Str "and",Space,Str "this",Space,Str "is",Space,Superscript [Str "superscripted"],Str "."]
+, Para [Str "Lack",Space,Str "of",Space,Str "spaces",Strong [Str "preserved",Space,Str "too"],Space,Emph [Str "eh?"]]
 , Header 1 [Str "Preformatted",Space,Str "Text"]
 , Para [Str "Native",Space,Str "preformatted",Space,Str "text:"]
 , TODO (pre in native format)

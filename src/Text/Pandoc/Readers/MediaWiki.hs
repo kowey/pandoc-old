@@ -315,7 +315,7 @@ inlinesTilEnd :: String -> GenParser Char ParserState [Inline]
 inlinesTilEnd tag =
  concat `fmap` manyTill (inlineHtml
                          <|> parseInlines "\n<"
-                         <|> do { char '\n' >> return [Space] } 
+                         <|> do { char '\n'; return [Space] }
                         ) (htmlEndTag tag)
 
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -

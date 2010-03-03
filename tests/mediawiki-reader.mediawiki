@@ -212,7 +212,7 @@ Backslash: \
 
 Backtick: `
 
-<!-- Asterisk: * -->
+Asterisk: *
 
 Underscore: _
 

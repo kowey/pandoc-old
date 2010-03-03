@@ -24,8 +24,9 @@ Pandoc (Meta {docTitle = [], docAuthors = [], docDate = []})
 , Header 2 [Str "Native",Space,Str "BlockQuotes"]
 , Header 2 [Str "HTML",Space,Str "BlockQuotes"]
 , Para [Str "Here",Apostrophe,Str "s",Space,Str "a",Space,Str "block",Space,Str "quote:"]
+, TODO Simple HTML Blockquote
 , Para [Str "Here",Apostrophe,Str "s",Space,Str "another,",Space,Str "differently",Space,Str "indented:"]
-, TODO
+, TODO Fancy HTML Blockquotes
 , Header 1 [Str "Lists"]
 , Header 2 [Str "Unordered"]
 , BulletList
@@ -39,7 +40,7 @@ Pandoc (Meta {docTitle = [], docAuthors = [], docDate = []})
   , [ Plain [Str "Third"] ] ]
 , Header 2 [Str "Multiple",Space,Str "paragraphs",Space,Str "HTML"]
 , Para [Str "Multiple",Space,Str "paragraphs:"]
-, TODO
+, TODO Multiple paragraphs HTML
 , Header 2 [Str "Nested"]
 , BulletList
   [ [ Plain [Str "Tab"] ]
@@ -70,7 +71,7 @@ Pandoc (Meta {docTitle = [], docAuthors = [], docDate = []})
      [ [ Plain [Str "Definition",Space,Str "3."] ]
      ]) ]
 , Header 2 [Str "Definitions",Space,Str "in",Space,Str "HTML"]
-, TODO
+, TODO Definitions HTML
 , Header 2 [Str "Field",Space,Str "Lists"]
 , DefinitionList
   [ ([Str "address"],
@@ -94,17 +95,17 @@ Pandoc (Meta {docTitle = [], docAuthors = [], docDate = []})
      ]) ]
 , Header 1 [Str "HTML",Space,Str "blocks"]
 , Null
-, TODO
+, TODO HTML div blocks
 , Header 1 [Str "Inline",Space,Str "Markup"]
 , Para [Str "This",Space,Str "is",Space,Emph [Str "emphasized"],Str ".",Space,Str "This",Space,Str "is",Space,Strong [Str "strong"],Str "."]
-, TODO
 , Para [Str "Mixed",Space,Str "markup",Space,Emph [Str "emphasized",Space,Strong [Str "strong"],Space,Str "continued",Space,Str "on",Space,Str "second",Space,Str "line"]]
+, TODO code vs tt
 , Para [Str "This",Space,Str "is",Subscript [Str "subscripted"],Space,Str "and",Space,Str "this",Space,Str "is",Space,Superscript [Str "superscripted"],Str "."]
 , Header 1 [Str "Preformatted",Space,Str "Text"]
 , Para [Str "Native",Space,Str "preformatted",Space,Str "text:"]
-, TODO
+, TODO (pre in native format)
 , Para [Str "HTML",Space,Str "preformatted",Space,Str "text",Space,Str "with",Space,Str "native",Space,Str "parts:"]
-, TODO
+, TODO (pre with interleaved mediawiki)
 , Header 1 [Str "Special",Space,Str "characters"]
 , Para [Str "Here",Space,Str "is",Space,Str "some",Space,Str "unicode:"]
 , BulletList
@@ -143,16 +144,16 @@ Pandoc (Meta {docTitle = [], docAuthors = [], docDate = []})
 , Para [Str "Here",Apostrophe,Str "s",Space,Str "a",Space,Str "link",Space,Str "with",Space,Str "an",Space,Str "ampersand",Space,Str "in",Space,Str "the",Space,Str "link",Space,Str "text:",Space,Link [Str "AT&T"] ("http://example.com/url/",""),Str "."]
 , Para [Str "Autolinks:",Space,Link [] ("http://example.com/?foo=1&amp;bar=2","")]
 , Para [Str "But",Space,Str "not",Space,Str "here:"]
-, TODO
+, TODO (pre vs links)
 , Header 1 [Str "Images"]
 , Para [Str "From",Space,Str "\"Voyage",Space,Str "dans",Space,Str "la",Space,Str "Lune\"",Space,Str "by",Space,Str "Georges",Space,Str "Melies",Space,Str "(1902):"]
 , Para [Image [Str "image"] ("lalune.jpg","")]
 , Para [Image [Str "Voyage",Space,Str "dans",Space,Str "la",Space,Str "Lune"] ("lalune.jpg","")]
 , Para [Str "Here",Space,Str "is",Space,Str "a",Space,Str "movie",Space,Image [Str "movie"] ("movie.jpg",""),Space,Str "icon."]
 , Header 1 [Str "Line",Space,Str "Blocks"]
-, TODO
+, TODO Line blocks (what are these?)
 , Header 1 [Str "Simple",Space,Str "Tables"]
-, TODO
+, TODO Tables
 , Header 1 [Str "Special",Space,Str "Extensions"]
 , Para [Note [Plain [Str "this",Space,Str "needs",Space,Str "the",Space,Str "Cite",Space,Str "plugin",Space,Str "used",Space,Str "on",Space,Str "wikipedia",Space,Link [Str "baz"] ("baz","")]]] ]
 

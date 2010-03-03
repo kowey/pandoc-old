@@ -44,11 +44,15 @@ Another:
 
 Here's a block quote:
 
+<!-- TODO blockquote
 <blockquote>This is a block quote. It is pretty short.
 </blockquote>
+-->
+
 Here's another, differently indented:
 
-<blockquote>This is a block quote. It's indented with a tab.
+<!-- TODO blockquote
+<<blockquote>This is a block quote. It's indented with a tab.
 
 Code in a block quote:
 
@@ -66,6 +70,7 @@ Nested block quotes:
 
 <blockquote>nested
 </blockquote></blockquote></blockquote>
+-->
 
 = Lists =
 
@@ -85,11 +90,13 @@ Nested block quotes:
 
 Multiple paragraphs:
 
+<!-- TODO
 <ol>
 <li><p>Item 1, graf one.</p>
 <p>Item 1. graf two. The quick brown fox jumped over the lazy dog's back.</p></li>
 <li><p>Item 2.</p></li>
 <li><p>Item 3.</p></li></ol>
+-->
 
 == Nested ==
 
@@ -99,6 +106,7 @@ Multiple paragraphs:
 
 Here's another:
 
+<!-- TODO
 <ol>
 <li><p>First</p></li>
 <li><p>Second:</p>
@@ -108,6 +116,7 @@ Here's another:
 <li>Foe</li></ul>
 </blockquote></li>
 <li><p>Third</p></li></ol>
+-->
 
 = Definitions =
 
@@ -122,6 +131,7 @@ Here's another:
 
 == Definitions in HTML ==
 
+<!-- TODO
 <dl>
 <dt>term 1</dt>
 <dd><p>Definition 1.</p></dd>
@@ -130,6 +140,7 @@ Here's another:
 <p>Definition 2, paragraph 2.</p></dd>
 <dt>term with ''emphasis''</dt>
 <dd><p>Definition 3.</p></dd></dl>
+-->
 
 == Field Lists ==
 
@@ -151,6 +162,7 @@ Here's another:
 
 <!-- HTML comments get ignored -->
 
+<!-- TODO
 Simple block on one line:
 
 <div>foo</div>
@@ -164,6 +176,7 @@ Now, nested:
         </div>
     </div>
 </div>
+-->
 
 = Inline Markup =
 
@@ -172,7 +185,11 @@ This is ''emphasized''. This is '''strong'''.
 Mixed markup <em>emphasized '''strong'''
 continued on second line</em>
 
-This is code: <tt>&gt;</tt>, <tt>$</tt>, <tt>\</tt>, <tt>\$</tt>, <tt>&lt;html&gt;</tt>.
+<!-- TODO
+This is code: <code>&gt;</code>, <code>$</code>, <code>\</code>, <code>$</code>, <code>&lt;html&gt;</code>.
+
+This is not code, but HTML: <tt>&gt;</tt>, <tt>$</tt>, <tt>\</tt>, <tt>\$</tt>, <tt>&lt;html&gt;</tt>.
+-->
 
 This is<sub>subscripted</sub> and this is <sup>superscripted</sup>.
 
@@ -180,15 +197,19 @@ This is<sub>subscripted</sub> and this is <sup>superscripted</sup>.
 
 Native preformatted text:
 
+<!-- TODO
  preformatted text is done with
  a '''space''' at the
  ''beginning'' of the line
+-->
 
 HTML preformatted text with native parts:
 
+<!-- TODO
 <pre>preformatted text is done with
  a '''space''' at the
  ''beginning'' of the line</pre>
+-->
 
 = Special characters =
 
@@ -275,6 +296,8 @@ Here is a movie [[Image:movie.jpg|movie]] icon.
 = Line Blocks =
 
 = Simple Tables =
+
+<!-- TODO: tables -->
 
 = Special Extensions =
 

@@ -38,7 +38,11 @@ Pandoc (Meta {docTitle = [], docAuthors = [], docDate = []})
   [ [ Plain [Str "First"] ]
   , [ Plain [Str "Second"] ]
   , [ Plain [Str "Third"] ] ]
-, Header 2 [Str "Multiple",Space,Str "paragraphs",Space,Str "HTML"]
+, Header 2 [Str "HTML"]
+, Para [Str "Simple",Space,Str "stuff:"]
+, BulletList
+  [ [ Plain [Str "foo",Emph [Str "bar"]] ]
+ ]
 , Para [Str "Multiple",Space,Str "paragraphs:"]
 , TODO Multiple paragraphs HTML
 , Header 2 [Str "Nested"]

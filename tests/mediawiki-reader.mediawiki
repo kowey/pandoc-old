@@ -86,7 +86,11 @@ Nested block quotes:
 # Second
 # Third
 
-== Multiple paragraphs HTML ==
+== HTML ==
+
+Simple stuff:
+
+* foo <em>bar</em>
 
 Multiple paragraphs:
 

@@ -168,9 +168,11 @@ parseList ctor itemChar = do
     parseListItem :: MWP (Int, [Block])
     parseListItem = do
         listSymbols <- (many1 $ char itemChar) <?> "List item"
-        content <- parsePlainWithin <|> return Null -- TODO: expand to more things available in lists
+        -- TODO: expand to more things available in lists
+        content <- (many1 $ choice [ parsePlainWithin, parseHtml ]) <|> return [ Null ]
         endOfLine -- Consume end of this list item
-        return (length listSymbols, [content])
+        -- TODO: deal with paragraphs appropriately
+        return (length listSymbols, mergePlain content)
 
     nestListItems :: [(Int,[Block])] -- ^ Chunks with indent level.
                   -> Int             -- ^ Current (or starting) nesting level.
@@ -643,12 +645,8 @@ stringWithBrackets delims stop = helper False
 -- * Utility funcions
 
 detectPara :: [Block] -> [Block]
-detectPara = concatMap detect . merge
+detectPara = concatMap detect . mergePlain
  where
-  merge [] = []
-  merge (Plain xs : Plain ys : bs) = merge (Plain (xs ++ ys) : bs)
-  merge (b:bs) = b : merge bs
-  --
   detect (Plain xs) = mapMaybe mkPara . joinBack . splitLB $ xs
   detect xs = [xs]
   mkPara xs = case (concat . intersperse [Space] . filter (not.null) . treatLB $ xs) of
@@ -663,6 +661,11 @@ detectPara = concatMap detect . merge
   joinBack = groupBy innocentLB
   innocentLB _ (LineBreak:LineBreak:_) = False -- 2 or more = a new paragraph
   innocentLB _ _ = True
+
+mergePlain :: [Block] -> [Block]
+mergePlain [] = []
+mergePlain (Plain xs : Plain ys : bs) = mergePlain (Plain (xs ++ ys) : bs)
+mergePlain (b:bs) = b : mergePlain bs
 
 -- | A singleton list of a given element if a condition holds, empty otherwise.
 listIf :: Bool      -- ^ If this holds, then...

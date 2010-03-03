@@ -99,6 +99,8 @@ Pandoc (Meta {docTitle = [], docAuthors = [], docDate = []})
 , Header 1 [Str "Inline",Space,Str "Markup"]
 , Para [Str "This",Space,Str "is",Space,Emph [Str "emphasized"],Str ".",Space,Str "This",Space,Str "is",Space,Strong [Str "strong"],Str "."]
 , Para [Str "Mixed",Space,Str "markup",Space,Emph [Str "emphasized",Space,Strong [Str "strong"],Space,Str "continued",Space,Str "on",Space,Str "second",Space,Str "line"]]
+, Para [[Str "Distribution",Space,Str "of",Space,Str "inlines",Space,Str "over",Space,Str "paragraph",Space,Str "boundaries",Space,Emph [Str "p1"]]
+, Para [Emph [Str "p2"]]
 , TODO code vs tt
 , Para [Str "This",Space,Str "is",Space,Subscript [Str "subscripted"],Space,Str "and",Space,Str "this",Space,Str "is",Space,Superscript [Str "superscripted"],Str "."]
 , Para [Str "Lack",Space,Str "of",Space,Str "spaces",Strong [Str "preserved",Space,Str "too"],Space,Emph [Str "eh?"]]

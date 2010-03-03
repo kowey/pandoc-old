@@ -185,6 +185,10 @@ This is ''emphasized''. This is '''strong'''.
 Mixed markup <em>emphasized '''strong'''
 continued on second line</em>
 
+Distribution of inlines over paragraph boundaries <em>p1
+
+p2</em>
+
 <!-- TODO
 This is code: <code>&gt;</code>, <code>$</code>, <code>\</code>, <code>$</code>, <code>&lt;html&gt;</code>.
 

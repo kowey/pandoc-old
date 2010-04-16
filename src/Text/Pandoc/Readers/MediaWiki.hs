@@ -107,6 +107,7 @@ parseBlock = do
          <|> parseOrderedList
          <|> parseDefinitionList
          <|> parseHtml
+         <|> parseTable
          <|> parsePlain
          <|> parseEmptyBlock
     return block
@@ -583,6 +584,22 @@ fTxtToPandoc total@((n,_):_) =
 -- | Convert a string into a couse list of Inlines, with only Bold/Italic parts parsed.
 parseBoldItalic :: String -> [Inline]
 parseBoldItalic = fTxtToPandoc . (biParser 0) . biLexer
+
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -
+-- * Parsing tables
+
+parseTable :: MWP Block
+parseTable = do
+  rs <- between (string "{|") (string "|}") rows
+  return $ Table [] [] [] [] [rs]
+ where
+  rows    = -- TODO: table properties
+            drop 1 `fmap` (option [] $ row `sepBy1` (try $ string "|-"))
+  row     = -- TODO: row properties
+            drop 1 `fmap` (option [] $ column `sepBy1` (try $ char '|' >> notFollowedBy (char '}') ))
+  column  = -- this is not quite right : the '|' symbol
+            -- could very well appear in links
+            (Plain . singleton . Str) `fmap` many (noneOf "|")
 
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 -- * Links

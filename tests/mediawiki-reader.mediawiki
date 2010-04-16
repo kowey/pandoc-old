@@ -322,7 +322,12 @@ Here is a movie [[Image:movie.jpg|movie]] icon.
 
 = Simple Tables =
 
-<!-- TODO: tables -->
+{| hoo
+|-
+row one | foo | bar
+|-
+row two | foo | bar
+|}
 
 = Special Extensions =
 

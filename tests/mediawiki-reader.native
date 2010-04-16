@@ -117,6 +117,7 @@ Pandoc (Meta {docTitle = [], docAuthors = [], docDate = []})
 , Header 1 [Str "Special",Space,Str "characters"]
 , Para [Str "Here",Space,Str "is",Space,Str "some",Space,Str "unicode:"]
 , BulletList
+<<<<<<< HEAD:tests/mediawiki-reader.native
   [ [ Plain [Str "I",Space,Str "hat:",Space,Str "\206"] ]
   , [ Plain [Str "o",Space,Str "umlaut:",Space,Str "\246"] ]
   , [ Plain [Str "section:",Space,Str "\167"] ]
@@ -163,8 +164,9 @@ Pandoc (Meta {docTitle = [], docAuthors = [], docDate = []})
 , Header 1 [Str "Line",Space,Str "Blocks"]
 , TODO Line blocks (what are these?)
 , Header 1 [Str "Simple",Space,Str "Tables"]
-, TODO Tables
+, Para [Str "Table:"]
 , Header 1 [Str "Special",Space,Str "Extensions"]
 , Para [Note [Plain [Str "this",Space,Str "needs",Space,Str "the",Space,Str "Cite",Space,Str "plugin",Space,Str "used",Space,Str "on",Space,Str "wikipedia",Space,Link [Str "baz"] ("baz","")]]]
 , Para [Note [],Str "-"] ]
+ ] ]
 

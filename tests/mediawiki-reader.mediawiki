@@ -301,6 +301,10 @@ From "Voyage dans la Lune" by Georges Melies (1902):
 
 [[Image:lalune.jpg|image]]
 
+[[file:lalune.jpg|image]]
+
+[[media:lalune.jpg|image]]
+
 [[Image:lalune.jpg|Voyage dans la Lune]]
 
 Here is a movie [[Image:movie.jpg|movie]] icon.

@@ -39,6 +39,7 @@ Conversion from MediaWiki to 'Pandoc' document.
 -}
 module Text.Pandoc.Readers.MediaWiki (readMediaWiki, test) where
 
+import Data.Char ( toLower )
 import Data.List ( intersperse, groupBy )
 import Data.Maybe ( mapMaybe )
 import qualified Data.List.Split as SP -- could be rewritten without
@@ -601,7 +602,7 @@ parseRemoteLink = rawLink <|> brackLink
 
 parseImage :: GenParser Char () Inline
 parseImage = try $ doubleBracketed $ do
-  string "Image:"
+  choice $ map string (names ++ map toLowerHead names)
   ps <- stringWithBrackets "|" "]" `sepBy` (char '|')
   case ps of
    []      -> error "empty image"
@@ -609,6 +610,8 @@ parseImage = try $ doubleBracketed $ do
    (p:_:_) -> case runParser (parseInlines "") defaultParserState "image caption" (last ps) of
                 Left err  -> fail (show err)
                 Right ins -> return $ Image ins (p, "")
+ where
+  names = map (++ ":") [ "Image", "Media", "File" ]
 
 -- | 'stringWithBrackets' @delims stop@ parses text in which the @delim@
 --   characters only appear within brackets or not at all.  @stop@
@@ -695,4 +698,6 @@ stripSpaces = stripAll [Space]
 stripWhiteSpace :: [Inline] -> [Inline]
 stripWhiteSpace = stripAll [Space, LineBreak]
 
-
+toLowerHead :: String -> String
+toLowerHead "" = ""
+toLowerHead (x:xs) = toLower x : xs

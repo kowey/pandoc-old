@@ -281,7 +281,7 @@ notReallyHtml =
  try $ do { char '<' ; spaces ; return [ Str "<", Space ] }
 
 inlineHtml =
-      singleton `fmap` choice [ emph, strong, ref, subscript, superscript ]
+      singleton `fmap` choice [ brLinebreak, emph, strong, ref, subscript, superscript ]
   <|> -- TODO: I'm not sure what the wisest way to deal with unrecognised HTML
       -- is.  Right now, I just ignore the tags and return the content :-(
      do { t <- anyHtmlTag
@@ -296,6 +296,9 @@ selfClosing t =
 betweenTags :: [Char] -> GenParser Char ParserState [Inline]
 betweenTags tag = try $ htmlOpenTag tag >> inlinesTilEnd tag >>= 
                         return . normalizeSpaces
+
+brLinebreak :: GenParser Char ParserState Inline
+brLinebreak = htmlSelfClosingTag "br" >> return LineBreak
 
 emph :: GenParser Char ParserState Inline
 emph = (betweenTags "em" <|> betweenTags "i") >>= return . Emph

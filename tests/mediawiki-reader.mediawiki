@@ -205,6 +205,15 @@ This is <sub>subscripted</sub> and this is <sup>superscripted</sup>.
 
 Lack of spaces<b>preserved too</b> <i>eh?</i>
 
+<!-- TODO (should be one-paragraph, no?)
+Line<br/>
+broken
+-->
+
+<br/>
+
+<br clear="all"/>
+
 = Preformatted Text =
 
 Native preformatted text:

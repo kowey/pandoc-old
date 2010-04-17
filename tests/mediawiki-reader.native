@@ -117,7 +117,6 @@ Pandoc (Meta {docTitle = [], docAuthors = [], docDate = []})
 , Header 1 [Str "Special",Space,Str "characters"]
 , Para [Str "Here",Space,Str "is",Space,Str "some",Space,Str "unicode:"]
 , BulletList
-<<<<<<< HEAD:tests/mediawiki-reader.native
   [ [ Plain [Str "I",Space,Str "hat:",Space,Str "\206"] ]
   , [ Plain [Str "o",Space,Str "umlaut:",Space,Str "\246"] ]
   , [ Plain [Str "section:",Space,Str "\167"] ]

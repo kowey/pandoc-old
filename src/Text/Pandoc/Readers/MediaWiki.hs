@@ -589,17 +589,16 @@ parseBoldItalic = fTxtToPandoc . (biParser 0) . biLexer
 -- * Parsing tables
 
 parseTable :: MWP Block
-parseTable = do
-  rs <- between (string "{|") (string "|}") rows
-  return $ Table [] [] [] [] [rs]
+parseTable = try $ do
+  between (string "{|") (string "|}") rows
+  return $ Table [] [] [] [] []
  where
   rows    = -- TODO: table properties
             drop 1 `fmap` (option [] $ row `sepBy1` (try $ string "|-"))
   row     = -- TODO: row properties
             drop 1 `fmap` (option [] $ column `sepBy1` (try $ char '|' >> notFollowedBy (char '}') ))
-  column  = -- this is not quite right : the '|' symbol
-            -- could very well appear in links
-            (Plain . singleton . Str) `fmap` many (noneOf "|")
+  column  = many anything
+  anything = notFollowedBy' (string "|}" <|> string "|-") >> anyChar
 
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 -- * Links

@@ -275,6 +275,7 @@ parseDefinitionList = do
 parseHtml :: MWP Block
 parseHtml = do
   (htmlComment >> return Null)
+  <|> referencesBlock
   <|> Plain `fmap` inlineHtml
   <|> Plain `fmap` notReallyHtml
 
@@ -316,6 +317,9 @@ superscript = Superscript `fmap` betweenTags "sup"
 ref :: GenParser Char ParserState Inline
 ref =   ((Note . singleton . Plain) `fmap` betweenTags "ref")
     <|> (htmlSelfClosingTag "ref" >> return (Note [])) -- TODO what's the significance of self-closing tags?
+
+referencesBlock :: GenParser Char ParserState Block
+referencesBlock = (htmlSelfClosingTag "references" >> return Null)
 
 -- | Read inlines until end tag.
 inlinesTilEnd :: String -> GenParser Char ParserState [Inline]

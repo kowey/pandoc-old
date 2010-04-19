@@ -171,7 +171,7 @@ parseList ctor itemChar = do
     parseListItem = do
         listSymbols <- (many1 $ char itemChar) <?> "List item"
         -- TODO: expand to more things available in lists
-        content <- (many1 $ choice [ parsePlainWithin, parseHtml ]) <|> return [ Null ]
+        content <- parseListItemContents []
         endOfLine -- Consume end of this list item
         -- TODO: deal with paragraphs appropriately
         return (length listSymbols, mergePlain content)
@@ -228,9 +228,11 @@ parseDefinitionList = do
     parseDefinitionData :: MWP DefinitionItem
     parseDefinitionData = do
         defSymbols <- (many1 $ char ':') <?> "Definition data"
-        defContents <- parseInlines "\n"
+        defContents <- parseListItemContents []
         endOfLine -- Consume end of this list item
-        return $ DataIt (length defSymbols) (Plain $ stripWhiteSpace defContents)
+        case mergePlain defContents of
+          [Plain x] -> return $ DataIt (length defSymbols) (Plain x)
+          _ -> fail "only one block recognised in def data"
 
     -- | Pericate to select sub elements in a certain indention level.
     isSubElement :: Int -> DefinitionItem -> Bool
@@ -339,9 +341,12 @@ parsePlain = do
     inlines <- parseInlines "\n<" -- stop at newline or html start
     return $ Plain inlines
 
-parsePlainWithin :: MWP Block
-parsePlainWithin = do
-    inlines <- parseInlines "\n<" -- stop at newline or html start
+parseListItemContents :: [Char] -> MWP [Block]
+parseListItemContents stop =
+  (many1 $ choice [ pPlain, parseHtml ]) <|> return [ Null ]
+ where
+  pPlain = do
+    inlines <- parseInlines (stop ++ "\n<") -- stop at newline or html start
     return $ Plain $ stripSpaces inlines
 
 -- | Parse a list of inlines.
